@@ -4,11 +4,17 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\GenericPasswordLinkResponse;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -18,7 +24,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(FailedPasswordResetLinkRequestResponse::class, GenericPasswordLinkResponse::class);
+        $this->app->bind(SuccessfulPasswordResetLinkRequestResponse::class, GenericPasswordLinkResponse::class);
     }
 
     /**
@@ -29,6 +36,14 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->app->booted(function () {
+            Route::getRoutes()->getByName('password.email')?->middleware('throttle:5,1');
+        });
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            $user = User::where('email', Str::lower((string) $request->input('email')))->first();
+
+            return $user && Hash::check((string) $request->input('password'), $user->password) && $user->isEligible() ? $user : null;
+        });
     }
 
     /**
@@ -45,13 +60,13 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn () => view('pages::auth.login'));
-        Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));
-        Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
-        Fortify::confirmPasswordView(fn () => view('pages::auth.confirm-password'));
+        Fortify::loginView(fn () => view('hris.auth.login'));
+        Fortify::verifyEmailView(fn () => view('hris.auth.verify-email'));
+        Fortify::twoFactorChallengeView(fn () => view('hris.auth.two-factor-challenge'));
+        Fortify::confirmPasswordView(fn () => view('hris.auth.confirm-password'));
         Fortify::registerView(fn () => view('pages::auth.register'));
-        Fortify::resetPasswordView(fn () => view('pages::auth.reset-password'));
-        Fortify::requestPasswordResetLinkView(fn () => view('pages::auth.forgot-password'));
+        Fortify::resetPasswordView(fn () => view('hris.auth.reset-password'));
+        Fortify::requestPasswordResetLinkView(fn () => view('hris.auth.forgot-password'));
     }
 
     /**

@@ -4,9 +4,11 @@ use App\Concerns\ProfileValidationRules;
 /* @chisel-email-verification */
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 /* @end-chisel-email-verification */
-use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
+use App\Support\Audit;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -33,7 +35,14 @@ new #[Title('Profile settings')] class extends Component {
     {
         $user = Auth::user();
 
+        $this->email = strtolower(trim($this->email));
         $validated = $this->validate($this->profileRules($user->id));
+
+        if ($user->first_name !== null && $validated['name'] !== $user->name) {
+            throw ValidationException::withMessages(['name' => 'Update your employee name through your personal data sheet.']);
+        }
+        $validated['email'] = strtolower($validated['email']);
+        $before = $user->attributesToArray();
 
         $user->fill($validated);
 
@@ -41,9 +50,12 @@ new #[Title('Profile settings')] class extends Component {
             $user->email_verified_at = null;
         }
 
-        $user->save();
+        DB::transaction(function () use ($user, $before) {
+            $user->save();
+            Audit::record('account.updated', $user, $user->id, $before);
+        });
 
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        $this->dispatch('app:notify', message: __('Profile updated.'));
     }
 
     /* @chisel-email-verification */
@@ -63,6 +75,7 @@ new #[Title('Profile settings')] class extends Component {
         $user->sendEmailVerificationNotification();
 
         Session::flash('status', 'verification-link-sent');
+        $this->dispatch('app:notify', message: __('Verification email sent.'));
     }
 
     #[Computed]
@@ -74,8 +87,8 @@ new #[Title('Profile settings')] class extends Component {
     #[Computed]
     public function showDeleteUser(): bool
     {
-        return ! Auth::user() instanceof MustVerifyEmail
-            || (Auth::user() instanceof MustVerifyEmail && Auth::user()->hasVerifiedEmail());
+        return Auth::user()->role === 'applicant' && (! Auth::user() instanceof MustVerifyEmail
+            || Auth::user()->hasVerifiedEmail());
     }
     /* @end-chisel-email-verification */
 }; ?>
@@ -86,8 +99,15 @@ new #[Title('Profile settings')] class extends Component {
     <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+        <form action="{{ route('account.photo') }}" method="POST" enctype="multipart/form-data" data-profile-photo-form class="my-6 space-y-4">
+            @csrf
+            <div class="flex items-center gap-4"><x-account-avatar :user="auth()->user()" :large="true" /><div><flux:heading>Profile picture</flux:heading><flux:text>JPG or PNG, up to 2 MB.</flux:text></div></div>
+            <label for="account-photo" class="block text-sm font-medium">Choose profile picture</label>
+            <input id="account-photo" type="file" name="file" accept="image/jpeg,image/png" required class="block w-full text-sm">
+            <flux:button type="submit" variant="primary">Upload picture</flux:button>
+        </form>
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" :readonly="auth()->user()->first_name !== null" />
 
             <div>
                 <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />

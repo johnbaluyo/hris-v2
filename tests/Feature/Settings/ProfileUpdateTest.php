@@ -54,9 +54,9 @@ class ProfileUpdateTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_applicant_can_delete_their_account(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'applicant']);
 
         $this->actingAs($user);
 
@@ -85,5 +85,22 @@ class ProfileUpdateTest extends TestCase
         $response->assertHasErrors(['password']);
 
         $this->assertNotNull($user->fresh());
+    }
+
+    public function test_employee_accounts_are_retained_for_hr_archiving(): void
+    {
+        $employee = User::factory()->create();
+        $this->actingAs($employee);
+        Livewire::test('pages::settings.delete-user-modal')->set('password', 'password')->call('deleteUser')->assertHasErrors('password');
+        $this->assertNotNull($employee->fresh());
+        $this->assertAuthenticatedAs($employee);
+    }
+
+    public function test_provisioned_employee_names_can_only_change_through_the_pds(): void
+    {
+        $employee = User::factory()->create(['first_name' => 'Avery', 'last_name' => 'Example', 'name' => 'Avery Example']);
+        $this->actingAs($employee);
+        Livewire::test('pages::settings.profile')->set('name', 'Changed outside PDS')->call('updateProfileInformation')->assertHasErrors('name');
+        $this->assertSame('Avery Example', $employee->fresh()->name);
     }
 }

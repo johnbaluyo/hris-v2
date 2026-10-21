@@ -31,6 +31,7 @@
             </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+            <div class="flex justify-center py-2"><x-theme-toggle /></div>
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -38,9 +39,11 @@
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
+            <x-theme-toggle />
 
             <flux:dropdown position="top" align="end">
                 <flux:profile
+                    :avatar="route('employees.avatar', auth()->user())"
                     :initials="auth()->user()->initials()"
                     icon-trailing="chevron-down"
                 />
@@ -50,6 +53,7 @@
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 <flux:avatar
+                                    :src="route('employees.avatar', auth()->user())"
                                     :name="auth()->user()->name"
                                     :initials="auth()->user()->initials()"
                                 />

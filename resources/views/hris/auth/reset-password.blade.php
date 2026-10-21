@@ -1,0 +1,3 @@
+@extends('layouts.hris-auth')
+@section('title','Set your password')
+@section('content')<form method="POST" action="{{ route('password.update') }}">@csrf<input type="hidden" name="token" value="{{ request()->route('token') }}"><div class="row g-3"><x-hris.field name="email" type="email" :value="old('email',request('email'))" class="col-12" required autocomplete="email"/><x-hris.field name="password" type="password" class="col-12" required autocomplete="new-password"/><x-hris.field name="password_confirmation" label="Confirm password" type="password" class="col-12" required autocomplete="new-password"/></div><button class="btn btn-primary w-100 mt-3" type="submit">Save password</button></form>@endsection

@@ -1,0 +1,8 @@
+@extends('layouts.hris')
+@section('title', 'Daily time record — '.$employee->name)
+@section('actions')<button class="btn btn-primary" data-print>Print</button>@endsection
+@section('content')
+<h1 class="h4">Daily time record</h1><p>{{ $employee->name }} · {{ $from }} through {{ $to }} · Asia/Manila</p><p class="small text-body-secondary">Minutes use the recorded policy version. Review incomplete records before personnel or financial use.</p>
+<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Date</th><th>In</th><th>Lunch out</th><th>Lunch in</th><th>Out</th><th>Worked min</th><th>Late min</th><th>Undertime min</th><th>Policy / review</th></tr></thead><tbody>@forelse($rows as $row)<tr><td>{{ $row->attendance_date->toDateString() }}</td><td>{{ $row->time_in ?? '—' }}</td><td>{{ $row->lunch_out ?? '—' }}</td><td>{{ $row->lunch_in ?? '—' }}</td><td>{{ $row->time_out ?? '—' }}</td><td>{{ $row->worked_minutes ?? '—' }}</td><td>{{ $row->late_minutes ?? '—' }}</td><td>{{ $row->undertime_minutes ?? '—' }}</td><td>{{ $row->policy_version }}{{ $row->needs_review ? ' / needs review':'' }}{{ $row->is_override ? ' / corrected':'' }}</td></tr>@empty<tr><td colspan="9">No records for this period.</td></tr>@endforelse</tbody><tfoot><tr><th colspan="5">Totals</th><td>{{ $rows->sum('worked_minutes') }}</td><td>{{ $rows->sum('late_minutes') }}</td><td>{{ $rows->sum('undertime_minutes') }}</td><td></td></tr></tfoot></table></div>
+@foreach($remarks as $remark)<p><strong>{{ $remark->coverage->format('F Y') }}:</strong> {{ $remark->remarks }} · FC absence: {{ $remark->fc_absence }}</p>@endforeach
+@endsection

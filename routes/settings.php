@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\PrivateFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/employees/{employee}/avatar', [PrivateFileController::class, 'avatar'])->name('employees.avatar');
+    Route::post('/account/profile-photo', [PrivateFileController::class, 'storeOwnPhoto'])->name('account.photo');
     Route::redirect('settings', 'settings/profile');
 
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');

@@ -36,3 +36,9 @@ jobs:
 
       - name: Run CI Checks
         run: composer ci:check
+
+      - name: Install browser test runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser workflow checks
+        run: npm run test:browser

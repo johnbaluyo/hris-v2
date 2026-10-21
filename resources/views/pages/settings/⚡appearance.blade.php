@@ -13,10 +13,10 @@ new #[Title('Appearance settings')] class extends Component {
     <flux:heading level="2" class="sr-only">{{ __('Appearance settings') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Appearance')" :subheading="__('Update the appearance settings for your account')">
-        <flux:radio.group x-data variant="segmented" x-model="$flux.appearance">
-            <flux:radio value="light" icon="sun">{{ __('Light') }}</flux:radio>
-            <flux:radio value="dark" icon="moon">{{ __('Dark') }}</flux:radio>
-            <flux:radio value="system" icon="computer-desktop">{{ __('System') }}</flux:radio>
-        </flux:radio.group>
+        <div class="flex items-center gap-3" role="group" aria-label="Color theme">
+            <flux:button type="button" data-set-theme="light" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i> Light</flux:button>
+            <flux:button type="button" data-set-theme="dark" aria-pressed="false"><i class="fa-solid fa-moon" aria-hidden="true"></i> Dark</flux:button>
+            <flux:button type="button" data-set-theme="system" aria-pressed="false"><i class="fa-solid fa-desktop" aria-hidden="true"></i> System</flux:button>
+        </div>
     </x-pages::settings.layout>
 </section>

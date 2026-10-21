@@ -3,6 +3,7 @@
 use App\Concerns\PasswordValidationRules;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 new class extends Component {
@@ -18,6 +19,10 @@ new class extends Component {
         $this->validate([
             'password' => $this->currentPasswordRules(),
         ]);
+
+        if (Auth::user()->role !== 'applicant') {
+            throw ValidationException::withMessages(['password' => 'Employee accounts must be archived by HR so personnel history is retained.']);
+        }
 
         tap(Auth::user(), $logout(...))->delete();
 

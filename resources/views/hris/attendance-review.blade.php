@@ -1,0 +1,10 @@
+@extends('layouts.hris')
+@section('title', 'Monthly attendance review')
+@section('subtitle', 'Review the employees in your permitted scope. Totals use the stored daily calculation results.')
+@section('actions')@can('attendance.export')<a id="monthly-export" href="#" class="btn btn-outline-primary">Export monthly CSV</a>@endcan @endsection
+@section('content')
+<x-hris.table id="monthly-attendance" :endpoint="'/attendance/review/data?month='.today('Asia/Manila')->format('Y-m')" search filters :columns="[['key'=>'name','label'=>'Employee'],['key'=>'division.name','label'=>'Division'],['key'=>'recorded_days','label'=>'Recorded days'],['key'=>'worked_minutes','label'=>'Worked min'],['key'=>'late_minutes','label'=>'Late min'],['key'=>'undertime_minutes','label'=>'Undertime min'],['key'=>'review_days','label'=>'Needs review']]" :actions="[['name'=>'view','label'=>'View DTR']]">
+<div><label class="form-label" for="review-month">Month</label><input id="review-month" name="month" type="month" class="form-control" value="{{ today('Asia/Manila')->format('Y-m') }}" data-table-filter required></div><div><label for="review-division" class="form-label">Division</label><select name="division_id" id="review-division" class="form-select" data-table-filter><option value="">Permitted divisions</option>@foreach($divisions as $division)<option value="{{ $division->id }}">{{ $division->name }}</option>@endforeach</select></div>
+</x-hris.table>
+@endsection
+@push('scripts')<script>document.addEventListener('hris:ready',()=>{const element=document.querySelector('#monthly-attendance');element.addEventListener('table:action',({detail:{row}})=>location.href=`/attendance/${row.id}`);const link=document.querySelector('#monthly-export');if(link){const update=()=>{const params=new URLSearchParams();element.querySelectorAll('[data-table-filter]').forEach(input=>params.set(input.name,input.value));link.href='/attendance/review/export?'+params};element.querySelectorAll('[data-table-filter]').forEach(input=>{input.addEventListener('change',update);input.addEventListener('keyup',update)});update()}});</script>@endpush

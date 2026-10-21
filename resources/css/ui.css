@@ -1,0 +1,19 @@
+@import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-free/css/solid.min.css';
+@import 'sweetalert2/dist/sweetalert2.min.css';
+
+:root { --app-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'Segoe UI', sans-serif; }
+body, button, input, select, textarea, .swal2-popup { font-family: var(--app-font); }
+.theme-toggle { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #64748b; cursor: pointer; }
+.theme-toggle i { font-size: 1.9rem; }
+.fa-solid[data-flux-icon] { display: inline-flex; align-items: center; justify-content: center; }
+.theme-toggle[aria-checked='true'] { color: #8ab4ff; }
+.theme-toggle:hover { background: #64748b18; }
+.theme-toggle:focus-visible { outline: 3px solid #6ea8fe; outline-offset: 2px; }
+.account-avatar { width: 40px; height: 40px; flex-shrink: 0; object-fit: cover; border-radius: 50%; background: #dbeafe; }
+.account-avatar-lg { width: 88px; height: 88px; }
+.swal2-container { z-index: 2000; }
+.swal2-popup { border-radius: 1rem; }
+.swal2-toast .swal2-html-container { overflow-wrap: anywhere; }
+.swal2-toast { max-width: calc(100vw - 2rem); }
+@media print { .swal2-container, .theme-toggle { display: none !important; } }

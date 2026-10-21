@@ -42,6 +42,7 @@
             </flux:navbar>
 
             <x-desktop-user-menu />
+            <x-theme-toggle />
         </flux:header>
 
         <!-- Mobile Menu -->
