@@ -1,0 +1,22 @@
+{
+  "revision": "c8973c067292967581b0ae5a2fe8493f905fed4c",
+  "routes": 460,
+  "duplicateRouteKeys": 3,
+  "missingExplicitMethods": [
+    "POST /index/check_last -> Auth\\LoginController@check_last",
+    "POST /employee/ob/amend -> OBController@amend_ob",
+    "GET /dtr/dtr_analyzer -> DTRController@dtr_analyzer",
+    "POST /cto/get_info -> CTOController@get_info",
+    "GET /hr/payroll/print -> HRPayrollController@printReport",
+    "POST /careers/upload_files -> RecruitmentExamController@upload_files",
+    "POST /hr/recognition-awardees/show -> HRStaffController@nominationAwardeesShow",
+    "POST /announcement/bday -> AdminController@bday",
+    "GET /404 -> COEController@notFound",
+    "GET /404 -> COEController@notFound",
+    "GET /ipcr/success_indicators/{id} -> IPCRController@success_indicators",
+    "GET /ipcr/accompishment_details/{data3_id} -> IPCRController@accompishment_details"
+  ],
+  "controllers": 36,
+  "models": 89,
+  "migrations": 192
+}
