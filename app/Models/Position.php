@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/** @property int|null $salary_grade @property string $title */
 class Position extends Model
 {
-    protected $fillable = ['division_id', 'title', 'code', 'plantilla', 'classification', 'status'];
+    protected $fillable = ['division_id', 'title', 'code', 'plantilla', 'classification', 'salary_grade', 'status'];
 
     /** @return BelongsTo<Division, $this> */
     public function division(): BelongsTo
@@ -25,6 +26,6 @@ class Position extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['plantilla' => 'boolean', 'division_id' => 'integer'];
+        return ['plantilla' => 'boolean', 'division_id' => 'integer', 'salary_grade' => 'integer'];
     }
 }

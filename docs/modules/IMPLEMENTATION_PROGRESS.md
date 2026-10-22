@@ -1,4 +1,4 @@
-# Modules 01–05 implementation progress
+# Modules 01–10 implementation progress
 
 ## Documentation analysis
 
@@ -11,7 +11,7 @@
 ## Decisions
 
 - Existing Laravel 13/PHP 8.4 application; retain Fortify authentication, recovery and MFA. New module UI uses Bootstrap 5.3.8, Blade and Fetch; ten-row server pagination. No additional frontend framework.
-- Named roles with explicit abilities. HR administers staff/PDS/attendance; system administrators administer accounts/organization/content without automatically receiving confidential HR rights. Division attendance is limited to the current division or an effective, explicit delegation. No legacy numeric administrator mapping is assumed.
+- Named roles with explicit abilities. HR administers staff/PDS/attendance; system administrators administer accounts/organization/content without automatically receiving confidential HR rights. Temporary delegation augments rather than replaces the employee's permanent role: a chief may act as Director OIC, or a staff member may act as Division Chief OIC for their own division, during an inclusive date range. No legacy numeric administrator mapping is assumed.
 - Invitation/reset onboarding; public registration closed. Archived accounts and employees terminated on/before today cannot authenticate or continue existing sessions. Applicant access is limited to account settings pending recruitment (module 11).
 - All timestamps and calendar dates use Asia/Manila. Archive and termination are independent. Attendance IDs normalize leading zeros and reject all-zero values.
 - Position changes are transactional with old/new assignment, actor and assumption date. Per the user's 22 October 2026 decision, every position is exclusive to one employee, including nonplantilla positions; a unique database index enforces this rule. Archiving or terminating an employee preserves their assignment. Effective delegations cannot overlap for the same employee/division/ability.
@@ -350,3 +350,143 @@ Verification: five dedicated seeder tests passed with 695 assertions, covering v
 - Account pictures appear in shared account controls, account settings, the staff directory and PDS. Owners can upload a JPG/PNG up to 2 MB in account settings; HR can still manage staff photos. The authenticated avatar endpoint serves the latest private profile image or an initials SVG fallback, without publishing storage paths or using external avatar services. Unrelated accounts cannot retrieve another employee's photo; existing HR/PDS record access is honored. Invalid replacements preserve the prior file.
 - Calendars now includes a physical month grid using FullCalendar 6.1.22 with Luxon 3.7.2 and the Asia/Manila timezone plugin. My/Office/Executive selection sits above the grid and applies to both grid and list. Previous/next/Today controls, click-to-create on dates, click-to-view/edit events, multi-day events and overflow links are supported. Saves/deletes refresh both views. The existing event list remains paginated at ten rows, while the bounded, authorized month feed includes every matching event in the visible range; inclusive all-day storage is converted to exclusive feed ends. Calendar loading failures offer retry.
 - Verification: **118 backend tests passed, two registration tests skipped, 1,287 assertions; seven browser workflows passed**. New coverage includes private photo ownership/unverified-account uploads, safe fallbacks and replacement rejection, full feeds beyond ten rows, office/executive privacy, month range validation, SweetAlert2 Fetch and Livewire success/error messages, account image refresh, persistent icon theme controls, mobile overflow and a Los Angeles browser showing Manila month-end events correctly. Calendar switching/navigation and settled mobile-to-desktop resizing were also checked. Inspected desktop/mobile screenshots under ignored `storage/framework/testing/`; production build, PHPStan level 7, Pint and whitespace checks passed. npm installation reported zero vulnerabilities. Browser cache/session fixtures remain isolated from the developer database and application cache.
+
+## Modules 06-10 - 22 October 2026, Asia/Manila
+
+### Documentation analysis and shared decisions
+
+- [x] Read modules 06-10 in `docs/rebuild/modules/` and the architecture/decision register. `docs/modules/06*` through `10*` do not exist; the rebuild guides remain the requirements source.
+- [x] Implement one scoped, append-only request-status history keyed by request type and request ID. All actors come from the authenticated session; latest scoped state controls queues, calendar visibility and attendance effects.
+- [x] Use server pagination at ten rows, keyup search, Fetch forms, responsive Bootstrap tables/modals and the existing light/dark layout.
+- [x] Add private request evidence metadata and authorized download behavior. No attachment is placed under a public path.
+- [x] Keep authorization, measured overtime, COC earning, CTO consumption, leave credits and payroll money as distinct records/services.
+- [ ] Legacy data/file import and cutoff reconciliation are not applicable without an approved source dataset and file manifest. Migration mappings remain required before production cutover.
+
+### 06 Official business
+
+- [x] Database, model, personal/division/HR/ED scoped ten-row listing, validated filing, session-derived actor and guarded DC/ED approval/rejection/cancellation.
+- [x] Work-related/medical/bereavement catalogue values and departure/return options are retained. Filing cannot include evidence; the owner or authorized HR can upload private PDF/JPG/PNG evidence only after the latest status is Approved.
+- [x] Only latest Approved state affects attendance: direct departure clears late and no-return clears undertime; later cancellation removes the exemption on recalculation.
+- [x] Approved OB appears in authorized personal/office calendar feeds.
+- [ ] Amendment UI/version-chain and printed signature form are pending an approved amendment reapproval route and official form sample.
+- [ ] Medical monthly limits/exceptions and compulsory evidence remain disabled pending the documented HR decision; no personnel-ID exception was copied.
+- [ ] Mail delivery is not enabled because recipients and the staff/type-2 routing mismatch remain unresolved.
+
+### 07 Overtime and COC
+
+- [x] Stable employee-ID filing, atomic HR multi-employee authorization support, unique request dates, private evidence, scoped lists and guarded DC-to-ED workflow.
+- [x] Approved authorization does not manufacture rendered overtime or COC. Request minutes and actual attendance remain separate.
+- [x] Append-only minute COC entries use idempotency keys, expiry fields and source provenance; HR adjustments require the named capability and a reason.
+- [x] Approved OT dates appear in authorized calendar feeds.
+- [ ] Automatic COC earning and monetary OT are disabled pending D06/D08 decisions on multipliers, caps, expiry and rates.
+- [ ] Authorization print form and migration/unit reconciliation remain pending approved source artifacts.
+
+### 08 Compensatory time off
+
+- [x] Server derives whole/AM/PM minutes as 8/4 or 10/5 hours from the employee schedule and rejects non-workdays, overlaps and insufficient available COC.
+- [x] HR certification, division recommendation, ED/OIC decision and owner cancellation use guarded transitions.
+- [x] Final approval locks expiring credit lots, consumes them FIFO by expiry/scope, records request-specific allocations once, and cancellation restores exactly those lots through a compensating event.
+- [x] Latest Approved whole/AM/PM dates affect attendance and appear in calendar feeds; cancelled requests do not.
+- [ ] Credit reservation before approval, cancellation after lot expiry and approved-hours correction are pending the D06 policy decision.
+- [ ] Printed CTO form/signatory snapshots and legacy pending-out reconciliation require approved form/source data.
+
+### 09 Leave management
+
+- [x] Stable leave codes preserve observed IDs for VL, SL, FL, SPL, Solo Parent, Emergency and Wellness leave; Study Leave is keyed by the stable `STUDY` code.
+- [x] Filing contains leave type, requested/not-requested commutation, type-specific detail choices and inclusive whole dates. VL, SL, SPL and STUDY detail allowlists are enforced server-side; FL exposes only the exigency-of-service disapproval flag; other types have no special option.
+- [x] Dates can be added singly or as an inclusive range. The browser prompts for agency holidays and Fri/Sat/Sun on four-day schedules or Sat/Sun on five-day schedules; the server recomputes the warnings and requires explicit acknowledgement.
+- [x] Multi-date filing is atomic, detects active leave/CTO overlaps, and shows/accepts number of days only for detail-code-7 monetization, which has no absence dates.
+- [x] HR certification, division-chief recommendation and Director final approval are independently guarded. A division chief receives Director authority only through an active `director.oic` acting-role delegation; staff receive chief attendance/request scope only through an active `division-chief.oic` delegation for their own division. CAO witness actions exist only for the Director's own application, and cancellation is creator-only.
+- [x] Review actions are generated server-side from the latest state, reviewer role, ownership and active delegation. The review modal displays the append-only action history with actor, role, resulting status, reason and Manila timestamp; new status rows retain the exact action code.
+- [x] Paid/unpaid total validation, exact three-decimal debit, idempotent cancellation reversal and the audited HR adjustment endpoint are implemented.
+- [x] Latest Approved inclusive leave dates affect attendance and authorized calendar feeds.
+- [ ] Automated accrual, four-day conversion, FL dual-debit, proration, timed approval and negative-balance policy are disabled pending D07.
+- [ ] Returned-request resubmission, official print/leave-card layouts and scheduled tardiness deductions need approved rules/forms.
+
+### 10 Payroll
+
+- [x] Payroll access is restricted to `payroll.manage`; headers validate type/period/fund/number and start as drafts.
+- [x] Employee salary is derived server-side from effective salary grade/step. Submitted gross/net/basic salary are ignored; compensation and deductions are recomputed with exact two-decimal rounding.
+- [x] One weekly allocation algorithm reconciles exactly to net, including amounts already divisible by four.
+- [x] Employee identity, organization, grade/step, money inputs and weekly allocation are snapshotted. Finalization is transactional and immutable; CSV export reads only finalized snapshots.
+- [x] Loan categories use the documented provider allowlist and preserve categories instead of deleting history.
+- [ ] Statutory/allowance defaults, CSW percentage/divisor automation, bonus eligibility and negative-net exceptions remain disabled pending D08 Finance approval. Reviewed amounts may be entered, but no UI default is represented as law or policy.
+- [ ] Copy-previous, payroll-loan line UI, void/correction lifecycle, Excel/DV/payslip form layouts and legacy reconciliation remain pending Finance decisions and approved output samples.
+
+### Modules 06-10 known gaps and deviations
+
+- Unresolved rules are deliberately not automated. This is a documented incomplete production-policy state, not a claim of legacy parity.
+- Request mail is not sent until recipient authority and templates are approved. Database transactions therefore cannot be left half-complete by mail failure.
+- Leave filing currently uses inclusive whole dates as specified in the reviewed interface; no undocumented AM/PM option is exposed.
+- Payroll supports safe reviewed draft calculation/finalization and CSV evidence. Statutory calculations and official spreadsheet/PDF layouts are not represented as complete.
+
+### Modules 06-10 verification
+
+- [x] Backend suite: **132 tests, 130 passed, two intentionally skipped registration tests, 1,398 assertions**.
+- [x] New workflow coverage verifies owner/division scope, temporary acting roles and expiry, role-specific leave actions, creator-only cancellation, Director/OIC/CAO boundaries, action-history output, guarded OB/OT/CTO/leave transitions, double-decision rejection, request-specific COC allocation/restoration, exact leave debit/reversal, latest-state attendance effects, request calendar feeds, server-derived payroll salary/totals and immutable snapshots.
+- [x] PHPStan level 7: zero errors. Pint style check: passed. Production Vite build: passed.
+- [x] Playwright browser suite: **eight passed** after prepending the installed PHP 8.4 executable directory for the Node web-server process. It covers asynchronous tables, mobile layout, themes, calendars, settings, error/empty states, leave-type option switching, conditional monetization fields, holiday confirmation, creator-only review actions and rendered action history.
+- [x] Additive migration is applied to local `db_hris_v2`; routes and all five new module pages load under their authorized roles.
+- [x] The fictional local demo dataset was restored after an Artisan `--env=testing` migration verification inherited the local database connection. Restored counts: 50 users, five divisions, 53 positions, 650 PDS rows, 2,581 raw punches, 756 daily attendance rows, nine portal items and five calendar events. The reference/legacy database was not touched. Any uncommitted edits made only inside the former local demo database cannot be reconstructed; the replacement demo credential is reported in the implementation handoff and is not stored in the repository.
+
+## Modules 12-16, 21 and 22 - 22 October 2026, Asia/Manila
+
+### Shared implementation decisions
+
+- [x] All lists use authenticated, server-enforced owner/custodian/division/acting-role scopes and ten-row pagination. Ordinary staff cannot gain coworker access merely by sharing a division.
+- [x] Status-bearing records use append-only action rows with session-derived actors. Confidential evidence uses generated private object paths, checksums, metadata, and the same resource authorization on download.
+- [x] Signed/reported structures use stable child IDs and immutable snapshots. Updates do not address array indexes, and division budgets are recalculated transactionally from persisted lines.
+- [x] Historical/reference records are archived, superseded, or versioned instead of destructively removed.
+
+### 12 Learning and development
+
+- [x] Position requirements support category validation, create/edit/archive, exact-deduplicated copy, and preserved historical references.
+- [x] Completed PDS learning records can be linked to the current position requirement. Matrix output separates fulfilled, unfulfilled, and uncategorized history, including broken/other-position links without deleting the training record.
+- [x] Authorized division chiefs/OICs, Director/OIC, and HR planners can create one division plan per year, select only approved same-year/same-division IDP items, mark free training, and save nonnegative decimal budgets. Server totals and distinct staff count come from the persisted stable lines.
+- [x] Division learning plans have snapshot-based print output.
+- [ ] Annual position-matrix budget editing and XLSX import remain disabled because the repository does not establish budget ownership, an accepted template, expiration rules, or repeat-import behavior.
+
+### 13 Individual development plans
+
+- [x] Employees create one annual plan with one-to-three coverage years, documented purpose, position-scoped requirements, and stable proposal/training items. Draft edits preserve item IDs.
+- [x] Submission captures the employee/position/division snapshot. Staff plans route to the division chief/OIC; a chief's plan routes to the Director/OIC. Only the derived supervisor can approve, and approved plans feed division planning.
+- [ ] A separate HRDC approval is not enabled because no evidenced HRDC actor, quorum, or final-state rule exists.
+
+### 14 SALN
+
+- [x] Private owner working copies cover declarant/spouse, children, real and personal property, liabilities, business interests, and government relatives. Section keys are allowlisted and monetary values are bounded nonnegative decimals.
+- [x] Assets, liabilities, and net worth are derived in integer cents; owner/custodian reads are enforced and a grouped print view is available.
+- [ ] Electronic submission, revisions after submission, signatures, and filing-period uniqueness remain disabled pending the unresolved filing/signatory policy. The interface labels records as working copies rather than representing them as filed.
+
+### 15 IPCR
+
+- [x] Employees create non-overlapping review periods and stable category-output/indicator/accomplishment hierarchies with complete draft CRUD. Submission captures an employee snapshot and enters `For Review`.
+- [x] Only the derived division chief/OIC or Director/OIC supervisor can rate submitted accomplishments. Quality, efficiency, and timeliness are bounded to 1-5; the compatibility calculator uses observed 40/40/20 category weights, exposes category and overall results, and prints the hierarchy.
+- [ ] Final approval, return/revision, and a replacement rating formula are disabled until the agency confirms D16. `For Review` is deliberately the terminal evidenced workflow state.
+
+### 16 Employee concerns
+
+- [x] Self-owned New concerns support private employee evidence and edit/cancel while New. HR alone can acknowledge then resolve with a required response; only the owner can acknowledge the resolution once.
+- [x] New, Acknowledged, Resolved, Staff Acknowledged, and Cancelled actions are append-only. Employee and HR attachments are normalized, generated privately, authorized with the concern, and committed atomically with the concern/action metadata.
+- [ ] Reopening, assignment/escalation, anonymity, notifications, retention, and evidence removal remain disabled pending policy decisions.
+
+### 21 Reference settings and holidays
+
+- [x] Authorized HR/system administrators manage effective-dated grade/step salary values with non-overlapping periods and historical end-dating. Payroll continues to snapshot the resolved value.
+- [x] Regular holidays, special nonworking days, work suspensions, and special orders support agency-wide or normalized employee-specific coverage, validated suspension cutoffs, authority/source, deliberate clearing, auditing, and archival.
+- [x] Leave warnings and attendance use the same scoped holiday query. Full-day covered references suppress penalties; work suspensions pass the earliest covered cutoff to the deterministic attendance calculator. Uncovered employees are unaffected.
+- [ ] Leave-conversion tables remain read-only/unpopulated until approved legal values, boundaries, decimal scale, and effective dates are supplied; no statutory formula was invented.
+
+### 22 Personnel document uploads
+
+- [x] The seven documented staff document types use explicit annual/semester/one-time periods, private validated files, owner/HR lists, and Submitted/Acknowledged/Returned/Cancelled action history.
+- [x] Duplicate type/year/period submissions are rejected. A Returned correction is the implemented safe default: it creates a new file version under the same record and preserves all earlier evidence and history. Only a Submitted owner record can be cancelled; only HR can acknowledge or return, with a required return reason.
+- [ ] The returned-correction default requires owner confirmation before production cutover. Applicant requirement files remain a separate workflow and are not mixed into this queue.
+
+### Modules 12-16, 21 and 22 verification
+
+- [x] Backend suite: **138 tests, 136 passed, two intentionally skipped public-registration tests, 1,463 assertions**.
+- [x] Playwright browser suite: **ten passed**, including responsive live-table rendering for every new module page and nested IDP, SALN, and IPCR editor submissions without a page reload.
+- [x] Dedicated feature tests cover page access, IDP item stability/supervisor scope/division budget totals, PDS training matrix classification, exact-cent SALN totals/privacy, nested IPCR review/rating scope, concern transitions, private attachments, returned document versioning, employee-specific calendar effects, and salary-period overlap rejection.
+- [x] The additive migration rolls back/reapplies on isolated SQLite and applies on local MySQL. MySQL verification caught and corrected a generated index-name length issue; the six empty tables from that failed attempt were verified empty, removed, and recreated by the successful migration. No existing table or user record was removed.
+- [x] PHPStan level 7, Pint, Blade compilation, production Vite build, and a focused mobile Playwright run for all seven module pages pass.

@@ -171,6 +171,72 @@ test('portal, calendar and PDS work on mobile with persistent light and dark the
     await page.screenshot({ path: 'storage/framework/testing/browser-alternate-theme.png', fullPage: true });
 });
 
+test('development, compliance, concern and reference modules render responsive live tables', async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const path of ['/learning-development', '/idp', '/saln', '/ipcr', '/concerns', '/personnel-documents', '/hr/references']) {
+        await page.goto(path);
+        await expect(page.locator('h1')).toBeVisible();
+        for (const table of await page.locator('[data-table]:visible').all()) {
+            await expect(table).toHaveAttribute('aria-busy', 'false');
+            await expect(table.locator('.table-feedback')).toBeHidden();
+        }
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+});
+
+test('IDP, SALN and IPCR structured editors save nested records without leaving the page', async ({ page }) => {
+    await login(page);
+    await page.goto('/idp');
+    await page.getByRole('button', { name: 'New IDP', exact: true }).click();
+    const idp = page.locator('#idp-modal');
+    await idp.getByLabel('Plan year').fill('2099');
+    await idp.getByLabel('Coverage years').fill('2099, 2100');
+    await idp.locator('select[name="purpose"]').selectOption('1');
+    await idp.getByLabel('Development proposal').fill('Build secure services');
+    await idp.getByLabel('Training or intervention title').fill('Secure coding');
+    await idp.getByRole('button', { name: 'Add item' }).click();
+    await idp.getByLabel('Development proposal').nth(1).fill('Improve facilitation');
+    await idp.getByLabel('Training or intervention title').nth(1).fill('Facilitation workshop');
+    await idp.getByRole('button', { name: 'Save draft' }).click();
+    await expect(idp).toBeHidden();
+    await expect(page.locator('#idp-table tbody')).toContainText('2099');
+
+    await page.goto('/saln');
+    await page.getByRole('button', { name: 'New filing', exact: true }).click();
+    const saln = page.locator('#saln-modal');
+    await saln.getByLabel('Filing type').selectOption('1');
+    await saln.getByLabel('Compliance type').selectOption('1');
+    await saln.getByLabel('Compliance date').fill('2099-12-31');
+    await saln.getByRole('button', { name: 'Create working copy' }).click();
+    const salnWork = page.locator('#saln-work-modal');
+    await expect(salnWork).toBeVisible();
+    await salnWork.locator('select[name="section"]').selectOption('real_property');
+    await salnWork.getByLabel(/Declared amount/).fill('100.25');
+    await salnWork.getByLabel('Section details').fill('description: Example property\nlocation: Manila');
+    await salnWork.getByRole('button', { name: 'Add section entry' }).click();
+    await expect(salnWork).toContainText('Assets: 100.25');
+
+    await page.goto('/ipcr');
+    await page.getByRole('button', { name: 'New IPCR', exact: true }).click();
+    const ipcr = page.locator('#ipcr-modal');
+    await ipcr.getByLabel('Period start').fill('2099-01-01');
+    await ipcr.getByLabel('Period end').fill('2099-06-30');
+    await ipcr.getByRole('button', { name: 'Create draft' }).click();
+    const work = page.locator('#ipcr-work-modal');
+    await expect(work).toBeVisible();
+    await work.getByLabel('Category').selectOption('1');
+    await work.getByLabel('Task').fill('Deliver secure service');
+    await work.getByRole('button', { name: 'Add output' }).click();
+    await work.getByLabel('Output').selectOption({ index: 1 });
+    await work.getByLabel('Description').fill('Accepted on schedule');
+    await work.getByRole('button', { name: 'Add indicator' }).click();
+    await work.getByLabel('Success indicator').selectOption({ index: 1 });
+    await work.locator('textarea[name="accomplishment"]').fill('Service released and accepted');
+    await work.getByRole('button', { name: 'Add accomplishment' }).click();
+    await expect(work.locator('#ipcr-structure')).toContainText('Service released and accepted');
+});
+
 test('calendar creates and deletes without a full reload and private event dates round trip', async ({ page }) => {
     await login(page);
     await page.goto('/calendar');
@@ -199,6 +265,41 @@ test('calendar creates and deletes without a full reload and private event dates
     await expect(table.locator('tbody')).toContainText('No records found.');
     await expect(page.locator('#event-calendar .fc-event')).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => window.calendarMarker)).toBe('keep-shell');
+});
+
+test('leave form changes details by type, limits monetization fields and warns for holidays', async ({ page }) => {
+    await login(page);
+    await page.goto('/leave');
+    await page.getByRole('button', { name: 'Apply for leave', exact: true }).click();
+    const modal = page.locator('#leave-modal');
+    await modal.getByLabel('Leave type').selectOption({ label: 'Vacation Leave' });
+    const details = modal.getByLabel('Leave details');
+    await expect(details.locator('option')).toHaveText(['Choose…', 'Within the Philippines', 'Abroad (specify)', 'Monetization of leave credits', 'Terminal Leave']);
+    await details.selectOption('2');
+    await expect(modal.getByLabel('Specify')).toBeVisible();
+    await details.selectOption('7');
+    await expect(modal.getByLabel('Number of days')).toBeVisible();
+    await expect(modal.getByRole('group', { name: 'Inclusive dates' })).toBeHidden();
+    await modal.getByLabel('Leave type').selectOption({ label: 'Mandatory/Forced Leave' });
+    await expect(modal.getByLabel('For Disapproval (Exigency of service)')).toBeVisible();
+    await expect(details).toBeHidden();
+    await modal.getByLabel('Leave type').selectOption({ label: 'Special Privilege Leave' });
+    await details.selectOption('1');
+    await modal.getByLabel('Date or range start').fill('2026-10-22');
+    await modal.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(page.locator('.swal2-popup')).toContainText('Example Agency Holiday');
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(modal.getByRole('button', { name: 'Remove 2026-10-22' })).toBeVisible();
+    await modal.getByRole('button', { name: 'Submit application', exact: true }).click();
+    await expect(modal).toBeHidden();
+    const row = page.locator('#leave-table tbody tr').filter({ hasText: 'Special Privilege Leave' });
+    await expect(row).toBeVisible();
+    await row.getByRole('button', { name: 'Review / cancel', exact: true }).click();
+    const review = page.locator('#leave-action');
+    await expect(review.getByLabel('Action').locator('option')).toHaveText(['Choose…', 'Cancel my application']);
+    await expect(review.getByRole('heading', { name: 'Action history' })).toBeVisible();
+    await expect(review.locator('#leave-action-history')).toContainText('For HR Cert');
+    await expect(review.locator('#leave-action-history')).toContainText('Administrator · system admin');
 });
 
 test('account settings show photos and SweetAlert2 feedback for Livewire saves, errors and photo uploads', async ({ page }) => {

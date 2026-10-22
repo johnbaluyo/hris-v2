@@ -23,6 +23,18 @@
             <a class="nav-link {{ request()->is('calendar*') ? 'active' : '' }}" href="{{ route('calendar') }}"><span><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span> Calendars</a>
             <a class="nav-link {{ request()->is('attendance*') ? 'active' : '' }}" href="{{ route('attendance') }}"><span><i class="fa-solid fa-clock" aria-hidden="true"></i></span> Attendance</a>
             <a class="nav-link {{ request()->routeIs('attendance.review') ? 'active' : '' }}" href="{{ route('attendance.review') }}"><span><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span> Monthly attendance review</a>
+            <div class="nav-section mt-4">REQUESTS & CREDITS</div>
+            <a class="nav-link {{ request()->is('official-business*') ? 'active' : '' }}" href="{{ route('official-business') }}"><span><i class="fa-solid fa-briefcase" aria-hidden="true"></i></span> Official business</a>
+            <a class="nav-link {{ request()->is('overtime*') ? 'active' : '' }}" href="{{ route('overtime') }}"><span><i class="fa-solid fa-business-time" aria-hidden="true"></i></span> Overtime & COC</a>
+            <a class="nav-link {{ request()->is('cto*') ? 'active' : '' }}" href="{{ route('cto') }}"><span><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span> Compensatory time off</a>
+            <a class="nav-link {{ request()->is('leave*') ? 'active' : '' }}" href="{{ route('leave') }}"><span><i class="fa-solid fa-calendar-minus" aria-hidden="true"></i></span> Leave</a>
+            <div class="nav-section mt-4">DEVELOPMENT & RECORDS</div>
+            <a class="nav-link {{ request()->is('learning-development*') ? 'active' : '' }}" href="{{ route('learning-development') }}"><span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span> Learning & development</a>
+            <a class="nav-link {{ request()->is('idp*') ? 'active' : '' }}" href="{{ route('idp') }}"><span><i class="fa-solid fa-road" aria-hidden="true"></i></span> Development plans</a>
+            <a class="nav-link {{ request()->is('saln*') ? 'active' : '' }}" href="{{ route('saln') }}"><span><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></span> SALN</a>
+            <a class="nav-link {{ request()->is('ipcr*') ? 'active' : '' }}" href="{{ route('ipcr') }}"><span><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span> IPCR</a>
+            <a class="nav-link {{ request()->is('concerns*') ? 'active' : '' }}" href="{{ route('concerns') }}"><span><i class="fa-solid fa-comments" aria-hidden="true"></i></span> Concerns</a>
+            <a class="nav-link {{ request()->is('personnel-documents*') ? 'active' : '' }}" href="{{ route('personnel-documents') }}"><span><i class="fa-solid fa-folder-closed" aria-hidden="true"></i></span> Personnel documents</a>
             @endif
             @can('staff.manage')<div class="nav-section mt-4">HR ADMINISTRATION</div><a class="nav-link {{ request()->is('hr/staff*') ? 'active' : '' }}" href="{{ route('staff.index') }}"><span><i class="fa-solid fa-users" aria-hidden="true"></i></span> Staff directory</a>@endcan
             @can('organization.manage')
@@ -31,6 +43,8 @@
             @endcan
             @can('delegations.manage')<a class="nav-link {{ request()->is('delegations') ? 'active' : '' }}" href="{{ route('delegations') }}"><span><i class="fa-solid fa-user-clock" aria-hidden="true"></i></span> Temporary delegations</a>@endcan
             @can('portal.manage')<a class="nav-link {{ request()->is('portal/manage') ? 'active' : '' }}" href="{{ route('portal.manage') }}"><span><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></span> Portal content</a>@endcan
+            @can('payroll.manage')<a class="nav-link {{ request()->is('hr/payroll*') ? 'active' : '' }}" href="{{ route('payroll') }}"><span><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i></span> Payroll</a>@endcan
+            @can('references.manage')<a class="nav-link {{ request()->is('hr/references*') ? 'active' : '' }}" href="{{ route('references') }}"><span><i class="fa-solid fa-sliders" aria-hidden="true"></i></span> Reference settings</a>@endcan
         </nav>
         <div class="sidebar-footer mt-auto pt-5 d-flex align-items-center gap-2"><x-account-avatar :user="auth()->user()" /><div><span class="badge text-bg-light mb-2">{{ str_replace('_', ' ', auth()->user()->role) }}</span><p class="mb-0 small">{{ auth()->user()->name }}</p></div></div>
     </div>

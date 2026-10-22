@@ -18,7 +18,7 @@ class CalendarEventPolicy
 
         return match ($event->event_type) {
             'My Calendar' => false,
-            'Executive Director Activities' => $user->hasAbility('calendar.manage') || $user->role === 'executive_director',
+            'Executive Director Activities' => $user->hasAbility('calendar.manage') || $user->actsAsDirector(),
             default => true,
         };
     }

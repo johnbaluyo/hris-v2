@@ -73,7 +73,7 @@ class HrisDemoSeeder extends Seeder
             }
             Delegation::firstOrCreate([
                 'user_id' => $users[9]->id, 'division_id' => $users[9]->division_id,
-                'ability' => 'attendance.division', 'period_start' => $day->startOfMonth()->toDateString(),
+                'ability' => 'division-chief.oic', 'period_start' => $day->startOfMonth()->toDateString(),
             ], ['period_end' => $day->endOfMonth()->toDateString(), 'actor_id' => $users[2]->id]);
 
             $this->portal($users, $day);

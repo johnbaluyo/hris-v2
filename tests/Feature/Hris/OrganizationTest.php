@@ -140,20 +140,27 @@ class OrganizationTest extends TestCase
         $this->getJson('/hr/staff/data?search=Findable&page=99')->assertOk()->assertJsonPath('current_page', 2)->assertJsonCount(2, 'data');
     }
 
-    public function test_inclusive_delegations_are_scoped_and_overlap_is_rejected(): void
+    public function test_temporary_chief_delegations_are_inclusive_scoped_and_non_overlapping(): void
     {
         $hr = User::factory()->create(['role' => 'hr']);
         $division = Division::create(['name' => 'Research']);
-        $delegate = User::factory()->create();
+        $delegate = User::factory()->create(['role' => 'staff', 'division_id' => $division->id]);
         $employee = User::factory()->create(['division_id' => $division->id]);
         $other = User::factory()->create();
-        $data = ['user_id' => $delegate->id, 'division_id' => $division->id, 'ability' => 'attendance.division', 'period_start' => today()->toDateString(), 'period_end' => today()->toDateString()];
+        $data = ['user_id' => $delegate->id, 'division_id' => $division->id, 'ability' => 'division-chief.oic', 'period_start' => today()->toDateString(), 'period_end' => today()->toDateString()];
+        $this->actingAs($hr)->get('/delegations')->assertOk()->assertSee('Director OIC')->assertSee('Division Chief OIC')->assertDontSee('Division attendance access');
         $this->actingAs($hr)->postJson('/delegations', $data)->assertCreated();
         $this->postJson('/delegations', $data)->assertUnprocessable();
+        $this->getJson('/delegations')->assertJsonPath('data.0.type_label', 'Division Chief OIC');
+        $this->assertSame('staff', $delegate->role);
+        $this->assertTrue($delegate->hasAbility('attendance.division'));
+        $this->assertTrue($delegate->hasAbility('requests.division'));
         $this->actingAs($delegate)->getJson('/attendance/'.$employee->id.'/data')->assertOk();
         $this->getJson('/attendance/'.$other->id.'/data')->assertForbidden();
         $this->travel(1)->days();
         $this->getJson('/attendance/'.$employee->id.'/data')->assertForbidden();
+        $this->assertFalse($delegate->hasAbility('attendance.division'));
+        $this->assertFalse($delegate->hasAbility('requests.division'));
         $this->assertDatabaseCount('delegations', 1);
     }
 

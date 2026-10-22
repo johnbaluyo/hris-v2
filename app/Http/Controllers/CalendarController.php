@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\SendEventMail;
 use App\Models\CalendarEvent;
 use App\Models\User;
+use App\Services\Requests\RequestCalendar;
 use App\Support\Audit;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +32,7 @@ class CalendarController extends Controller
         return CalendarEvent::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhereHas('participants', fn ($q) => $q->where('users.id', $user->id))
                 ->orWhereNotIn('event_type', ['My Calendar', 'Executive Director Activities']);
-            if ($user->hasAbility('calendar.manage') || $user->role === 'executive_director') {
+            if ($user->hasAbility('calendar.manage') || $user->actsAsDirector()) {
                 $q->orWhere('event_type', 'Executive Director Activities');
             }
         });
@@ -69,18 +70,21 @@ class CalendarController extends Controller
         return response()->json($events);
     }
 
-    public function feed(Request $request): JsonResponse
+    public function feed(Request $request, RequestCalendar $requestCalendar): JsonResponse
     {
         $range = $request->validate(['from' => 'required|date_format:Y-m-d', 'to' => 'required|date_format:Y-m-d|after_or_equal:from']);
         abort_if(CarbonImmutable::parse($range['from'])->diffInDays(CarbonImmutable::parse($range['to'])) > 93, 422, 'Choose a calendar range of at most 93 days.');
         $events = $this->filtered($request)->orderBy('starts_at')->orderBy('id')->get();
 
-        return response()->json($events->map(fn (CalendarEvent $event) => [
+        $calendarEvents = $events->map(fn (CalendarEvent $event) => [
             'id' => $event->id, 'title' => $event->title, 'allDay' => $event->all_day,
             'start' => $event->all_day ? $event->starts_at->toDateString() : $event->starts_at->format('Y-m-d\TH:i:sP'),
             'end' => $event->all_day ? $event->ends_at->addDay()->toDateString() : $event->ends_at->format('Y-m-d\TH:i:sP'),
             'extendedProps' => ['calendar' => $event->event_type, 'can_edit' => Gate::forUser($request->user())->allows('update', $event)],
-        ]));
+        ]);
+        $requestEvents = $requestCalendar->events($request->user(), $request->input('calendar', 'personal'), $range['from'], $range['to']);
+
+        return response()->json($calendarEvents->concat($requestEvents)->values());
     }
 
     public function show(CalendarEvent $event): JsonResponse

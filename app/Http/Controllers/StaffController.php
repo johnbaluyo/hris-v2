@@ -145,16 +145,26 @@ class StaffController extends Controller
     {
         Gate::authorize('delegations.manage');
         if ($request->isMethod('get')) {
-            return $request->expectsJson() ? response()->json(Delegation::latest('id')->paginate(10))
+            return $request->expectsJson() ? response()->json(Delegation::whereIn('ability', ['director.oic', 'division-chief.oic'])->with(['user:id,name,role', 'division:id,name'])->latest('id')->paginate(10)
+                ->through(fn (Delegation $delegation) => $delegation->toArray() + ['type_label' => $delegation->ability === 'director.oic' ? 'Director OIC' : 'Division Chief OIC']))
                 : view('hris.delegations', ['divisions' => Division::orderBy('name')->get()]);
         }
         $data = $request->validate(['user_id' => 'required|integer|exists:users,id', 'division_id' => 'required|integer|exists:divisions,id',
-            'ability' => ['required', Rule::in(['attendance.division'])], 'period_start' => 'required|date_format:Y-m-d', 'period_end' => 'required|date_format:Y-m-d|after_or_equal:period_start']);
+            'ability' => ['required', Rule::in(['director.oic', 'division-chief.oic'])], 'period_start' => 'required|date_format:Y-m-d', 'period_end' => 'required|date_format:Y-m-d|after_or_equal:period_start']);
         DB::transaction(function () use ($data, $request) {
-            User::whereKey($data['user_id'])->lockForUpdate()->firstOrFail();
-            if (Delegation::where('user_id', $data['user_id'])->where('division_id', $data['division_id'])->where('ability', $data['ability'])
-                ->whereDate('period_start', '<=', $data['period_end'])->whereDate('period_end', '>=', $data['period_start'])->exists()) {
-                throw ValidationException::withMessages(['period_start' => 'This delegation overlaps an existing assignment.']);
+            $delegate = User::whereKey($data['user_id'])->lockForUpdate()->firstOrFail();
+            if ($data['ability'] === 'director.oic' && ($delegate->role !== 'division_chief' || $delegate->division_id !== (int) $data['division_id'])) {
+                throw ValidationException::withMessages(['user_id' => 'Director OIC must be a division chief; select the chief’s own division.']);
+            }
+            if ($data['ability'] === 'division-chief.oic' && ($delegate->role !== 'staff' || $delegate->division_id !== (int) $data['division_id'])) {
+                throw ValidationException::withMessages(['user_id' => 'Division Chief OIC must be a staff member of the selected division.']);
+            }
+            $overlap = Delegation::where('ability', $data['ability'])
+                ->when($data['ability'] === 'division-chief.oic', fn ($query) => $query->where('division_id', $data['division_id']))
+                ->whereDate('period_start', '<=', $data['period_end'])->whereDate('period_end', '>=', $data['period_start'])->exists();
+            if ($overlap) {
+                $scope = $data['ability'] === 'director.oic' ? 'Director OIC assignment' : 'Division Chief OIC assignment for this division';
+                throw ValidationException::withMessages(['period_start' => "The {$scope} overlaps an existing delegation."]);
             }
             $delegation = Delegation::create($data + ['actor_id' => $request->user()->id]);
             Audit::record('delegation.created', $delegation, $request->user()->id);

@@ -18,9 +18,11 @@ class AttendanceScope
         if ($actor->hasAbility('attendance.read')) {
             return $query;
         }
-        $divisions = Delegation::where('user_id', $actor->id)->where('ability', 'attendance.division')
-            ->whereDate('period_start', '<=', today('Asia/Manila'))->whereDate('period_end', '>=', today('Asia/Manila'))->pluck('division_id')->all();
-        if ($actor->hasAbility('attendance.division') && $actor->division_id !== null) {
+        $divisions = $actor->role === 'staff'
+            ? Delegation::where('user_id', $actor->id)->where('ability', 'division-chief.oic')
+                ->whereDate('period_start', '<=', today('Asia/Manila'))->whereDate('period_end', '>=', today('Asia/Manila'))->pluck('division_id')->all()
+            : [];
+        if ($actor->role === 'division_chief' && $actor->division_id !== null) {
             $divisions[] = $actor->division_id;
         }
 

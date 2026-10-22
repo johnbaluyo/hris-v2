@@ -4,6 +4,7 @@ namespace App\Services\Attendance;
 
 use App\Models\AttendanceRevision;
 use App\Models\DailyAttendance;
+use App\Models\Holiday;
 use App\Models\RawPunch;
 use App\Models\User;
 use App\Models\WorkSchedule;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class AttendanceService
 {
-    public function __construct(private AttendanceCalculator $calculator) {}
+    public function __construct(private AttendanceCalculator $calculator, private RequestExemptions $exemptions) {}
 
     public function rebuild(User $employee, string $date, ?int $actorId = null, string $reason = 'Raw punch recalculation', bool $replaceOverride = false): DailyAttendance
     {
@@ -52,7 +53,27 @@ class AttendanceService
                 $schedule = WorkSchedule::where('user_id', $employee->id)->whereDate('starts_on', '<=', $date)
                     ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', $date))->latest('starts_on')->first();
                 $workweek = $logs->count() > 1 ? $schedule?->workweek : null;
-                $result = $this->calculator->calculate($times, $workweek, $wfh);
+                $calendarEntries = Holiday::effectiveFor($employee)->whereDate('holiday_date', $date)->get();
+                $suspension = $calendarEntries->where('type', 'Work Suspension')->pluck('suspension_time')->filter()->sort()->first();
+                $result = $this->calculator->calculate($times, $workweek, $wfh, is_string($suspension) ? $suspension : null);
+                $fullDayExcused = $calendarEntries->whereIn('type', ['Regular', 'Special Non-Working', 'Special Order'])->isNotEmpty();
+                if ($fullDayExcused) {
+                    $result['late_minutes'] = 0;
+                    $result['undertime_minutes'] = 0;
+                    if ($logs->isEmpty()) {
+                        $result['needs_review'] = false;
+                    }
+                }
+                $exemptions = $this->exemptions->forDate($employee->id, $date);
+                if ($exemptions['late']) {
+                    $result['late_minutes'] = 0;
+                }
+                if ($exemptions['undertime']) {
+                    $result['undertime_minutes'] = 0;
+                }
+                if ($exemptions['late'] && $exemptions['undertime'] && $logs->isEmpty()) {
+                    $result['needs_review'] = false;
+                }
                 $outsideEmployment = ($employee->date_hired && $day->isBefore($employee->date_hired)) || ($employee->termination_date && $day->isAfter($employee->termination_date));
                 if ($outsideEmployment) {
                     $result['needs_review'] = true;
@@ -60,7 +81,8 @@ class AttendanceService
                 }
                 $values = $times + $result + ['workweek' => $workweek, 'policy_version' => AttendanceCalculator::VERSION,
                     'is_override' => false, 'notes' => $wfh ? 'WEB WFH' : null,
-                    'provenance' => ['raw_ids' => $logs->pluck('id')->all(), 'schedule_id' => $schedule?->id, 'outside_employment' => (bool) $outsideEmployment]];
+                    'provenance' => ['raw_ids' => $logs->pluck('id')->all(), 'schedule_id' => $schedule?->id, 'outside_employment' => (bool) $outsideEmployment,
+                        'request_exemptions' => $exemptions['sources'], 'calendar_reference_ids' => $calendarEntries->pluck('id')->all()]];
                 $this->persist($record, $values, $actorId, $reason);
 
                 return $record;

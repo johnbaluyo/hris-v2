@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Division;
+use App\Models\Holiday;
 use App\Models\Position;
 use App\Models\PositionAssignment;
 use App\Models\User;
@@ -36,3 +37,4 @@ for ($index = 1; $index <= 15; $index++) {
     app(EmploymentHistory::class)->backfill($employee, $admin->id);
 }
 Position::create(['title' => 'Example New Employee Position', 'division_id' => $division->id, 'classification' => 'Staff']);
+Holiday::create(['name' => 'Example Agency Holiday', 'holiday_date' => '2026-10-22', 'type' => 'Regular']);

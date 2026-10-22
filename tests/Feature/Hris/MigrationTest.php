@@ -13,7 +13,7 @@ class MigrationTest extends TestCase
     public function test_new_module_migrations_roll_back_and_reapply_on_an_isolated_database(): void
     {
         $this->assertTrue(Schema::hasTable('daily_attendances'));
-        $this->artisan('migrate:rollback', ['--step' => 4, '--force' => true])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => 9, '--force' => true])->assertSuccessful();
         $this->assertFalse(Schema::hasTable('daily_attendances'));
         $this->assertFalse(Schema::hasTable('divisions'));
         $this->assertFalse(Schema::hasColumn('users', 'role'));

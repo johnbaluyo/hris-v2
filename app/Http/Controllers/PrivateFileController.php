@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ConcernAttachment;
+use App\Models\PersonnelDocumentVersion;
 use App\Models\PortalItem;
 use App\Models\PrivateFile;
 use App\Models\User;
@@ -49,7 +51,7 @@ class PrivateFileController extends Controller
 
     public function store(Request $request, User $employee): JsonResponse
     {
-        $data = $request->validate(['purpose' => ['required', Rule::in(['personnel', 'profile', 'signature', 'certificate', 'government-id', 'portal'])],
+        $data = $request->validate(['purpose' => ['required', Rule::in(['personnel', 'profile', 'signature', 'certificate', 'government-id', 'portal', 'request-evidence'])],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,gif', 'max:10240']]);
         $actor = $request->user();
         $purpose = $data['purpose'];
@@ -57,6 +59,7 @@ class PrivateFileController extends Controller
             'portal' => $actor->hasAbility('portal.manage'),
             'profile' => $actor->id === $employee->id || $actor->hasAbility('staff.manage'),
             'personnel', 'signature' => $actor->hasAbility('staff.manage'),
+            'request-evidence' => $actor->id === $employee->id || $actor->hasAbility('requests.override'),
             default => ($actor->id === $employee->id && $actor->role !== 'applicant') || $actor->hasAbility('pds.write'),
         }, 403);
         $upload = $request->file('file');
@@ -88,8 +91,16 @@ class PrivateFileController extends Controller
         $allowed = $actor->id === $file->user_id || $actor->hasAbility('staff.manage');
         if (in_array($file->purpose, ['certificate', 'government-id'], true)) {
             $allowed = $allowed || $actor->hasAbility('pds.read');
+        } elseif ($file->purpose === 'request-evidence') {
+            $ownerDivision = User::whereKey($file->user_id)->value('division_id');
+            $divisionReview = $ownerDivision !== null && $actor->actsAsDivisionChiefOf((int) $ownerDivision);
+            $allowed = $allowed || $divisionReview || $actor->hasAbility('requests.certify') || $actor->actsAsDirector();
         } elseif ($file->purpose === 'portal') {
             $allowed = $actor->hasAbility('portal.manage') || ($actor->role !== 'applicant' && PortalItem::where('file_id', $file->id)->where('status', 'Active')->exists());
+        } elseif ($file->purpose === 'concern') {
+            $allowed = $allowed || ($actor->hasAbility('concerns.manage') && ConcernAttachment::where('private_file_id', $file->id)->exists());
+        } elseif ($file->purpose === 'personnel-document') {
+            $allowed = $allowed || ($actor->hasAbility('documents.manage') && PersonnelDocumentVersion::where('private_file_id', $file->id)->exists());
         }
         abort_unless($allowed, 403);
         if (! Storage::disk('local')->exists($file->path)) {

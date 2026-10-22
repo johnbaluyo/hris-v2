@@ -100,6 +100,7 @@ export class AsyncTable {
                     actions.className = 'table-actions';
                     this.actions.forEach(action => {
                         if (action.editable && row.can_edit === false) return;
+                        if (action.when && !row[action.when]) return;
                         const button = document.createElement('button');
                         button.type = 'button';
                         button.className = `btn btn-sm ${action.danger ? 'btn-outline-danger' : 'btn-outline-primary'}`;
@@ -175,10 +176,10 @@ export function formData(form) {
 export function bindForm(form, options = {}) {
     form.addEventListener('submit', async event => {
         event.preventDefault();
-        const button = form.querySelector('[type="submit"]');
+        const button = event.submitter ?? form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
         const errors = form.querySelector('[data-form-errors]');
-        if (button.disabled) return;
-        button.disabled = true;
+        if (button?.disabled) return;
+        if (button) button.disabled = true;
         errors?.classList.add('d-none');
         try {
             const body = form.enctype === 'multipart/form-data' ? new FormData(form) : formData(form);
@@ -187,14 +188,14 @@ export function bindForm(form, options = {}) {
             if (body instanceof FormData && body.get('purpose') === 'profile') window.AppUI.refreshAvatars();
             feedback(result.message || 'Saved.');
             const modal = form.closest('.modal');
-            if (modal) Modal.getInstance(modal)?.hide();
+            if (modal && !options.keepOpen) Modal.getInstance(modal)?.hide();
             options.success?.(result, body);
             form.dispatchEvent(new CustomEvent('form:saved', { detail: result }));
         } catch (error) {
             const text = error.errors ? Object.values(error.errors).flat().join(' ') : error.message;
             if (errors) { errors.textContent = text; errors.classList.remove('d-none'); errors.focus(); }
             feedback(text, true);
-        } finally { button.disabled = false; }
+        } finally { if (button) button.disabled = false; }
     });
 }
 

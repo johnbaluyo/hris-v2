@@ -34,6 +34,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property CarbonImmutable|null $date_hired
  * @property CarbonImmutable|null $termination_date
  * @property CarbonImmutable|null $birthday
+ * @property string|null $employee_type
+ * @property string $role
+ * @property int|null $division_id
+ * @property int|null $step_increment
+ * @property Position|null $position
+ * @property Division|null $division
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -73,8 +79,40 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return false;
         }
 
-        return in_array($ability, config('hris.roles.'.$this->role, []), true)
+        $abilities = config('hris.roles.'.$this->role, []);
+        if ($this->role === 'division_chief' && $this->hasActiveDelegation('director.oic')) {
+            $abilities = array_merge($abilities, config('hris.roles.executive_director', []));
+        }
+        if ($this->role === 'staff' && $this->hasActiveDelegation('division-chief.oic')) {
+            $abilities = array_merge($abilities, config('hris.roles.division_chief', []));
+        }
+
+        return in_array($ability, $abilities, true)
             || DB::table('ability_grants')->where('user_id', $this->id)->where('ability', $ability)->exists();
+    }
+
+    public function actsAsDirector(): bool
+    {
+        return $this->isEligible() && ($this->role === 'executive_director'
+            || ($this->role === 'division_chief' && $this->hasActiveDelegation('director.oic')));
+    }
+
+    public function actsAsDivisionChiefOf(?int $divisionId): bool
+    {
+        if (! $this->isEligible() || $divisionId === null) {
+            return false;
+        }
+
+        return ($this->role === 'division_chief' && $this->division_id === $divisionId)
+            || ($this->role === 'staff' && $this->hasActiveDelegation('division-chief.oic', $divisionId));
+    }
+
+    private function hasActiveDelegation(string $type, ?int $divisionId = null): bool
+    {
+        return Delegation::where('user_id', $this->id)->where('ability', $type)
+            ->when($divisionId !== null, fn ($query) => $query->where('division_id', $divisionId))
+            ->whereDate('period_start', '<=', today('Asia/Manila'))
+            ->whereDate('period_end', '>=', today('Asia/Manila'))->exists();
     }
 
     public function canViewAttendanceOf(self $employee): bool
@@ -89,10 +127,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return false;
         }
 
-        return ($this->hasAbility('attendance.division') && $this->division_id === $employee->division_id)
-            || Delegation::where('user_id', $this->id)->where('division_id', $employee->division_id)
-                ->where('ability', 'attendance.division')->whereDate('period_start', '<=', today('Asia/Manila'))
-                ->whereDate('period_end', '>=', today('Asia/Manila'))->exists();
+        return $this->actsAsDivisionChiefOf($employee->division_id);
     }
 
     /** @return BelongsTo<Division, $this> */
