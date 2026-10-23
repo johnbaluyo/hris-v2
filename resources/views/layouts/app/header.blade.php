@@ -43,6 +43,7 @@
 
             <x-desktop-user-menu />
             <x-theme-toggle />
+            <x-access-mode-switch />
         </flux:header>
 
         <!-- Mobile Menu -->

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('attendance:rebuild')->dailyAt('00:30')->timezone('Asia/Manila')->withoutOverlapping();
+Schedule::command('notifications:expire')->hourly()->withoutOverlapping();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

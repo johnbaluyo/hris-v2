@@ -50,8 +50,10 @@ class DeviceAttendanceController extends Controller
                 $key = $client->id.':'.$epoch.':'.$input['anviz_log_id'];
                 $existing = RawPunch::where('source_key', $key)->first();
                 if ($existing) {
+                    $source = $existing->source_evidence ?? [];
                     foreach ($values as $field => $value) {
-                        $old = $field === 'punched_at' ? $existing->punched_at->format('Y-m-d H:i:s') : $existing->$field;
+                        $old = array_key_exists($field, $source) ? $source[$field]
+                            : ($field === 'punched_at' ? $existing->punched_at->format('Y-m-d H:i:s') : $existing->$field);
                         if ($old !== $value) {
                             throw ValidationException::withMessages(["records.{$index}.anviz_log_id" => 'This source event already exists with different evidence. No records were inserted.']);
                         }

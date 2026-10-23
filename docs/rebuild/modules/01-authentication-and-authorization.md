@@ -1,5 +1,7 @@
 # 01 Authentication and authorization
 
+**Implemented clarification, 23 October 2026:** Administrator accounts have an **Account access** selector beside the theme toggle, including in account settings. The choices are **Admin**, **Staff**, and **HR**. Admin is the default and retains existing administrator permissions and explicit account grants. HR uses the HR permission set; Staff permits employee access only. Restricted modes ignore administrator grants and delegations, and backend authorization applies the selected mode on every browser request. Only an active, verified administrator can switch modes, including returning to Admin from Staff or HR. The choice belongs to the current session and account, redirects to Employee Portal, and is audited. The permanent stored role and other sessions remain unchanged. No schema migration is required.
+
 ## Purpose and sources
 
 Authenticate employees and applicants, provision accounts, control module actions and record access, and establish trusted partner login. **Observed** describes the existing code; **target** describes the replacement; **unresolved** requires an explicit decision.

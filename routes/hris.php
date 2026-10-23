@@ -1,16 +1,19 @@
 <?php
 
+use App\Http\Controllers\AccountAccessController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceReviewController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ConcernController;
 use App\Http\Controllers\CtoController;
 use App\Http\Controllers\EmployeeLookupController;
+use App\Http\Controllers\EmploymentCertificateController;
 use App\Http\Controllers\IdpController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\IpcrController;
 use App\Http\Controllers\LearningDevelopmentController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\OfficePunchWindowController;
 use App\Http\Controllers\OfficialBusinessController;
 use App\Http\Controllers\OvertimeController;
 use App\Http\Controllers\PayrollController;
@@ -18,12 +21,73 @@ use App\Http\Controllers\PdsController;
 use App\Http\Controllers\PersonnelDocumentController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PrivateFileController;
+use App\Http\Controllers\RawAttendanceController;
+use App\Http\Controllers\RecognitionController;
+use App\Http\Controllers\RecruitmentController;
+use App\Http\Controllers\RecruitmentExamController;
 use App\Http\Controllers\ReferenceController;
 use App\Http\Controllers\SalnController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\SystemNotificationController;
+use App\Http\Controllers\WfhAccomplishmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/account/access-mode', AccountAccessController::class)->name('account.access-mode');
+    Route::get('/careers', [RecruitmentController::class, 'index'])->name('careers');
+    Route::get('/careers/vacancies', [RecruitmentController::class, 'vacancies']);
+    Route::post('/careers/vacancies/{vacancy}/apply', [RecruitmentController::class, 'apply']);
+    Route::get('/careers/applications', [RecruitmentController::class, 'applications']);
+    Route::post('/careers/profile', [RecruitmentController::class, 'profile']);
+    Route::post('/careers/documents', [RecruitmentController::class, 'upload']);
+    Route::get('/careers/documents', [RecruitmentController::class, 'documents']);
+    Route::get('/hr/recruitment', [RecruitmentController::class, 'index'])->middleware('can:recruitment.manage')->name('recruitment');
+    Route::post('/hr/recruitment/vacancies', [RecruitmentController::class, 'saveVacancy']);
+    Route::put('/hr/recruitment/vacancies/{vacancy}', [RecruitmentController::class, 'saveVacancy']);
+    Route::get('/hr/recruitment/bank', [RecruitmentController::class, 'bank']);
+    Route::post('/hr/recruitment/categories', [RecruitmentController::class, 'saveCategory']);
+    Route::put('/hr/recruitment/categories/{category}', [RecruitmentController::class, 'saveCategory']);
+    Route::post('/hr/recruitment/categories/{category}/questions', [RecruitmentController::class, 'saveQuestion']);
+    Route::post('/hr/recruitment/categories/{category}/questions/{question}', [RecruitmentController::class, 'saveQuestion']);
+    Route::post('/hr/recruitment/applications/{application}/review', [RecruitmentController::class, 'review']);
+    Route::get('/recruitment/applications/{application}/report', [RecruitmentController::class, 'report']);
+    Route::get('/recruitment/images/{file}', [RecruitmentController::class, 'image']);
+    Route::post('/careers/applications/{application}/exams/{category}/start', [RecruitmentExamController::class, 'start'])->middleware('throttle:20,1');
+    Route::get('/careers/exams/{attempt}', [RecruitmentExamController::class, 'show']);
+    Route::post('/careers/exams/{attempt}/submit', [RecruitmentExamController::class, 'submit']);
+
+    Route::get('/cert', [EmploymentCertificateController::class, 'index'])->name('certificates');
+    Route::get('/cert/data', [EmploymentCertificateController::class, 'data']);
+    Route::post('/cert', [EmploymentCertificateController::class, 'store']);
+    Route::post('/cert/{certificate}/transition', [EmploymentCertificateController::class, 'transition']);
+    Route::post('/cert/{certificate}/complete', [EmploymentCertificateController::class, 'complete']);
+    Route::get('/cert/{certificate}/print', [EmploymentCertificateController::class, 'print']);
+
+    Route::get('/recognition', [RecognitionController::class, 'index'])->name('recognition');
+    Route::get('/recognition/data', [RecognitionController::class, 'data']);
+    Route::get('/recognition/attendance', [RecognitionController::class, 'attendance']);
+    Route::post('/recognition', [RecognitionController::class, 'save']);
+    Route::put('/recognition/{event}', [RecognitionController::class, 'save']);
+    Route::post('/recognition/{event}/vote', [RecognitionController::class, 'vote']);
+    Route::post('/recognition/{event}/publish', [RecognitionController::class, 'publish']);
+    Route::post('/recognition/{event}/archive', [RecognitionController::class, 'archive']);
+
+    Route::get('/wfh-accomplishments', [WfhAccomplishmentController::class, 'index'])->name('wfh-accomplishments');
+    Route::get('/wfh-accomplishments/data', [WfhAccomplishmentController::class, 'data']);
+    Route::post('/wfh-accomplishments', [WfhAccomplishmentController::class, 'save']);
+    Route::put('/wfh-accomplishments/{accomplishment}', [WfhAccomplishmentController::class, 'save']);
+    Route::post('/wfh-accomplishments/{accomplishment}/transition', [WfhAccomplishmentController::class, 'transition']);
+    Route::get('/wfh-accomplishments/reports', [WfhAccomplishmentController::class, 'reports']);
+    Route::post('/wfh-accomplishments/consolidate', [WfhAccomplishmentController::class, 'consolidate']);
+    Route::post('/wfh-accomplishments/reports/{report}/transition', [WfhAccomplishmentController::class, 'reportAction']);
+    Route::get('/wfh-accomplishments/reports/{report}/print', [WfhAccomplishmentController::class, 'print']);
+    Route::get('/wfh-accomplishments/agency/{date}/print', [WfhAccomplishmentController::class, 'agency']);
+
+    Route::get('/notifications', [SystemNotificationController::class, 'index'])->name('notifications');
+    Route::get('/api/notifications', [SystemNotificationController::class, 'data']);
+    Route::get('/api/notifications/count', [SystemNotificationController::class, 'count']);
+    Route::post('/api/notifications/create', [SystemNotificationController::class, 'create']);
+    Route::post('/api/notifications/{action}', [SystemNotificationController::class, 'receipt'])->whereIn('action', ['read', 'dismiss', 'read-all', 'dismiss-all']);
     Route::get('/employees/lookup', EmployeeLookupController::class);
     Route::get('/ssi', [PortalController::class, 'index'])->name('ssi');
     Route::get('/hr/staff', [StaffController::class, 'index'])->name('staff.index');
@@ -62,6 +126,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/integration/runs', [IntegrationController::class, 'index']);
     Route::post('/integration/sync', [IntegrationController::class, 'store']);
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
+    Route::get('/hr/raw-attendance', [RawAttendanceController::class, 'index'])->name('raw-attendance');
+    Route::get('/hr/raw-attendance/data', [RawAttendanceController::class, 'data']);
+    Route::put('/hr/raw-attendance/{punch}', [RawAttendanceController::class, 'update'])->whereNumber('punch');
+    Route::get('/hr/raw-attendance/{punch}/history', [RawAttendanceController::class, 'history'])->whereNumber('punch');
+    Route::get('/attendance/clock-availability', [AttendanceController::class, 'clockAvailability']);
+    Route::get('/attendance/office-punch-windows', [OfficePunchWindowController::class, 'data']);
+    Route::post('/attendance/office-punch-windows', [OfficePunchWindowController::class, 'store']);
+    Route::post('/attendance/office-punch-windows/{window}/revoke', [OfficePunchWindowController::class, 'revoke']);
     Route::get('/attendance/review', [AttendanceReviewController::class, 'index'])->name('attendance.review');
     Route::get('/attendance/review/data', [AttendanceReviewController::class, 'data']);
     Route::get('/attendance/review/export', [AttendanceReviewController::class, 'export']);

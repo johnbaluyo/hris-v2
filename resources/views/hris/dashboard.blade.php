@@ -1,12 +1,13 @@
 @extends('layouts.hris')
 @section('title', 'Welcome, '.strtok(auth()->user()->name, ' '))
 @section('subtitle', 'Keep up with your workplace and manage your employee records.')
-@section('actions')<a class="btn btn-primary" href="{{ route('attendance') }}">View my attendance</a>@endsection
+@section('actions')<a class="btn btn-primary" href="{{ route('attendance') }}">View my attendance</a><x-hris.office-punch :access="$officeAccess"/>@endsection
 @section('content')
+@if($wfhTasks)<div class="alert alert-info"><a href="{{ route('wfh-accomplishments') }}">{{ $wfhTasks }} WFH {{ Str::plural('item', $wfhTasks) }} awaiting your review</a></div>@endif
 <div class="row g-4 mb-4">
     <div class="col-md-4"><a class="card portal-card h-100" href="{{ route('pds.index') }}"><div class="card-body d-flex gap-3"><div class="portal-icon" aria-hidden="true"><i class="fa-solid fa-address-card"></i></div><div><h2 class="h6 mt-1">Personal data sheet</h2><p class="small text-body-secondary mb-0">Review and update your personal records.</p></div></div></a></div>
     <div class="col-md-4"><a class="card portal-card h-100" href="{{ route('calendar') }}"><div class="card-body d-flex gap-3"><div class="portal-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></div><div><h2 class="h6 mt-1">Your calendar</h2><p class="small text-body-secondary mb-0">Office activities and personal events.</p></div></div></a></div>
-    <div class="col-md-4"><div class="card h-100"><div class="card-body"><h2 class="h6">Work from home</h2><p class="small text-body-secondary mb-0">{{ $wfh ? 'WFH time capture is available today.' : 'No WFH schedule is active today.' }}</p></div></div></div>
+    <div class="col-md-4"><div class="card h-100"><div class="card-body"><h2 class="h6">Work from home</h2><p class="small text-body-secondary mb-2">{{ $wfh ? 'WFH time capture is available today.' : 'WFH punches are available on Wednesdays or dates covered by a Work From Home calendar event.' }}</p><button type="button" class="btn btn-outline-primary" id="clock-wfh" @disabled(! $wfh)>Record WFH punch</button></div></div></div>
 </div>
 <div class="row g-4">
     <div class="col-xl-8">
@@ -21,3 +22,20 @@
     </div>
 </div>
 @endsection
+@push('scripts')
+<script>
+document.addEventListener('hris:ready', () => {
+    document.querySelector('#clock-wfh').addEventListener('click', async event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+            HRIS.feedback((await HRIS.request('/attendance/clock', {method: 'POST', body: {wfh: true}})).message);
+        } catch (error) {
+            HRIS.feedback(error.message, true);
+        } finally {
+            button.disabled = false;
+        }
+    });
+});
+</script>
+@endpush

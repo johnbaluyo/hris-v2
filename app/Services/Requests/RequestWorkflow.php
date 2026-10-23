@@ -130,8 +130,8 @@ class RequestWorkflow
         }
 
         return match (true) {
-            $action === 'certify' => $actor->role === 'hr' && $actor->hasAbility('requests.certify'),
-            $action === 'return' && $currentStatus === 'For HR Cert' => $actor->role === 'hr' && $actor->hasAbility('requests.certify'),
+            $action === 'certify' => in_array($actor->accessRole(), ['hr', 'system_admin'], true) && $actor->hasAbility('requests.certify'),
+            $action === 'return' && $currentStatus === 'For HR Cert' => in_array($actor->accessRole(), ['hr', 'system_admin'], true) && $actor->hasAbility('requests.certify'),
             $action === 'return' && $currentStatus === 'For DC Approval' => $actor->actsAsDivisionChiefOf($employee->division_id),
             str_ends_with($action, '_dc') => $actor->actsAsDivisionChiefOf($employee->division_id),
             str_ends_with($action, '_ed') => $actor->actsAsDirector(),

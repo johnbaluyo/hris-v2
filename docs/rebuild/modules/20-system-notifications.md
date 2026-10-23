@@ -1,5 +1,7 @@
 # 20 System notifications
 
+> Replacement implementation updated 23 October 2026. Checked technical build items have source and regression evidence in [the remaining-modules handoff](../../modules/REMAINING_MODULES_HANDOFF.md). Production-policy acceptance, official certificate generation and legacy reconciliation remain separate gates; unchecked items are not claimed complete.
+
 ## Purpose and sources
 
 Deliver actionable reminders inside SSI, including local HRIS events and notifications submitted by partner systems. **Observed** describes legacy behavior; **target/proposed** describes required improvements; **unresolved** requires an owner decision.
@@ -53,10 +55,10 @@ The mixed integer-ID/string-role audience is type sensitive. A role code is not 
 ## Build checklist
 
 - [ ] Resolve D04/D09/D13 for partner destinations, recipient semantics, receipts and retention.
-- [ ] Implement content, explicit audience and per-recipient receipt tables with appropriate indexes/uniqueness.
+- [x] Implement content, explicit audience and per-recipient receipt tables with appropriate indexes/uniqueness.
 - [ ] Preserve list/count/resource compatibility for retained consumers and document the ID conventions.
-- [ ] Implement authorized read/dismiss and bulk operations scoped to the current recipient.
-- [ ] Require explicit publishing permission for browser create and producer-specific scopes for external create.
+- [x] Implement authorized read/dismiss and bulk operations scoped to the current recipient.
+- [x] Require explicit publishing permission for browser create and producer-specific scopes for external create.
 - [ ] Resolve personal recipients through accepted stable identity mapping; preserve email evidence without using it as permanent identity.
 - [ ] Validate/sanitize text and presentation values, restrict destinations and use accepted SSI launch adapters.
 - [ ] Add external event deduplication, retries, expiry handling and a retention/archive procedure.

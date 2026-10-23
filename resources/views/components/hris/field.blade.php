@@ -1,5 +1,5 @@
-@props(['name', 'label' => null, 'type' => 'text', 'options' => [], 'required' => false, 'value' => '', 'help' => null])
-@php($id = 'field-'.preg_replace('/[^a-zA-Z0-9_-]/', '-', $name))
+@props(['name', 'label' => null, 'type' => 'text', 'options' => [], 'required' => false, 'value' => '', 'help' => null, 'id' => null])
+@php($id ??= 'field-'.preg_replace('/[^a-zA-Z0-9_-]/', '-', $name).'-'.Illuminate\Support\Str::random(8))
 <div class="{{ $attributes->get('class', 'col-md-6') }}">
     <label for="{{ $id }}" class="form-label">{{ $label ?? ucwords(str_replace('_', ' ', $name)) }} @if($required)<span aria-hidden="true">*</span>@endif</label>
     @if($type === 'select')

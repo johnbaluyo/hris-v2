@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApplyAccountAccessMode;
 use App\Http\Middleware\EnsureAccountEligible;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
@@ -15,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [EnsureAccountEligible::class]);
+        $middleware->web(append: [EnsureAccountEligible::class, ApplyAccountAccessMode::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (QueryException $exception, Request $request) {

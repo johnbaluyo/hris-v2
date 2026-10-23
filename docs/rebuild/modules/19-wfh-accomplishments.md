@@ -1,5 +1,7 @@
 # 19 — Work-from-home accomplishments and consolidated reports
 
+> Replacement implementation updated 23 October 2026. Checked technical build items have source and regression evidence in [the remaining-modules handoff](../../modules/REMAINING_MODULES_HANDOFF.md). Production-policy acceptance, official certificate generation and legacy reconciliation remain separate gates; unchecked items are not claimed complete.
+
 ## Purpose and evidence
 
 Collect staff WFH accomplishments per date, let division chiefs return or approve them, consolidate and sign division reports, let the head of agency approve, and print division/agency summaries with leave/onsite/no-record fallbacks.
@@ -54,15 +56,15 @@ Mutation suffixes under `/wfh-accomplishments`: `/store`, `/update`, `/chief-upd
 
 ## Build checklist
 
-- [ ] Preserve individual/consolidated entities and uniqueness constraints; add normalized immutable consolidation lines and transition history.
-- [ ] Implement configured WFH-date eligibility shared by UI and server, including effective dates and exceptions.
-- [ ] Implement staff submit/edit/delete/resubmit, chief on-behalf-of entry/edit/approve/return, and division-scoped access.
-- [ ] Implement explicit chief/delegate authority, eligibility, self-review restrictions and deterministic routing.
-- [ ] Implement consolidate/reconsolidate/delete-before-sign, chief sign and head approval with atomic state guards.
-- [ ] Lock signed report content and preserve employee/position/signature snapshots and included record versions.
+- [x] Preserve individual/consolidated entities and uniqueness constraints; add normalized immutable consolidation lines and transition history.
+- [x] Implement configured WFH-date eligibility shared by UI and server, including effective dates and exceptions.
+- [x] Implement staff submit/edit/delete/resubmit, chief on-behalf-of entry/edit/approve/return, and division-scoped access.
+- [x] Implement explicit chief/delegate authority, eligibility, self-review restrictions and deterministic routing.
+- [x] Implement consolidate/reconsolidate/delete-before-sign, chief sign and head approval with atomic state guards.
+- [x] Lock signed report content and preserve employee/position/signature snapshots and included record versions.
 - [ ] Integrate latest-state leave and normalized attendance identity/device logic for approved fallback labels.
-- [ ] Recreate staff/chief/head dashboards and division/agency print outputs with counts, dates and signatories.
-- [ ] Apply permission checks to print/data endpoints and repeat staff eligibility checks in mutation handlers.
+- [x] Recreate staff/chief/head dashboards and division/agency print outputs with counts, dates and signatories.
+- [x] Apply permission checks to print/data endpoints and repeat staff eligibility checks in mutation handlers.
 - [ ] Migrate statuses/counts/approval metadata and reconcile headers against individual records, active/historical staff, and missing signatures; label reconstructed membership/content separately from persisted facts and original retained report files.
 
 ## Acceptance checklist

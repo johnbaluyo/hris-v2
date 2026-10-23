@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>@yield('title', 'HRIS report')</title><style>
+body{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;max-width:1100px;margin:32px auto;padding:0 20px}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #bbb;padding:10px;text-align:left;vertical-align:top}p,td{overflow-wrap:anywhere;white-space:pre-wrap}img{max-width:100%;max-height:220px}small{color:#555}.signature{margin-top:30px}section{break-inside:avoid}button{padding:8px 16px}@media print{.no-print{display:none}body{margin:0;max-width:none;padding:0}thead{display:table-header-group}tr{break-inside:avoid}}
+</style></head><body><button type="button" class="no-print" onclick="window.print()">Print / save PDF</button>@yield('content')</body></html>

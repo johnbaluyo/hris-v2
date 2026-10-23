@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CertificateFile;
 use App\Models\ConcernAttachment;
 use App\Models\PersonnelDocumentVersion;
 use App\Models\PortalItem;
 use App\Models\PrivateFile;
+use App\Models\RecruitmentApplication;
+use App\Models\RecruitmentDocument;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
@@ -89,6 +92,20 @@ class PrivateFileController extends Controller
     {
         $actor = $request->user();
         $allowed = $actor->id === $file->user_id || $actor->hasAbility('staff.manage');
+        if (str_starts_with($file->purpose, 'recruitment-')) {
+            $document = RecruitmentDocument::where('private_file_id', $file->id)->first();
+            $application = $document?->recruitment_application_id ? RecruitmentApplication::find($document->recruitment_application_id) : null;
+            $allowed = $document && ($actor->hasAbility('recruitment.manage')
+                || ($document->side === 'requirement' && $actor->id === $document->user_id)
+                || ($document->side === 'requirement' && $document->recruitment_application_id === null
+                    && RecruitmentApplication::where('user_id', $document->user_id)->whereHas('vacancy.evaluators', fn ($q) => $q->where('users.id', $actor->id))->exists())
+                || ($application && $application->vacancy->evaluators()->where('users.id', $actor->id)->exists()));
+        } elseif ($file->purpose === 'exam-image') {
+            $allowed = false; // Exam snapshots authorize their own image endpoint.
+        } elseif ($file->purpose === 'employment-certificate') {
+            $allowed = CertificateFile::where('private_file_id', $file->id)->exists()
+                && ($actor->id === $file->user_id || $actor->hasAbility('certificates.manage'));
+        }
         if (in_array($file->purpose, ['certificate', 'government-id'], true)) {
             $allowed = $allowed || $actor->hasAbility('pds.read');
         } elseif ($file->purpose === 'request-evidence') {

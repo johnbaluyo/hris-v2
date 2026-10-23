@@ -45,6 +45,13 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
+    public const ACCESS_MODES = ['admin', 'staff', 'hr'];
+
+    private string $administratorAccessMode = 'admin';
+
+    // Match the database default before a newly created account is reloaded.
+    protected $attributes = ['role' => 'staff'];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
@@ -75,11 +82,20 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
     public function hasAbility(string $ability): bool
     {
+        if ($ability === 'recruitment.manage' && $this->hasReadOnlyCareers()) {
+            return false;
+        }
         if (! $this->isEligible() || $this->role === 'applicant') {
             return false;
         }
 
-        $abilities = config('hris.roles.'.$this->role, []);
+        $abilities = config('hris.roles.'.$this->accessRole(), []);
+        if ($this->isAdministrator()) {
+            if ($this->accessMode() !== 'admin') {
+                // Restricted modes must not inherit account grants or temporary delegations.
+                return in_array($ability, $abilities, true);
+            }
+        }
         if ($this->role === 'division_chief' && $this->hasActiveDelegation('director.oic')) {
             $abilities = array_merge($abilities, config('hris.roles.executive_director', []));
         }
@@ -91,10 +107,38 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             || DB::table('ability_grants')->where('user_id', $this->id)->where('ability', $ability)->exists();
     }
 
+    public function isAdministrator(): bool
+    {
+        return $this->role === 'system_admin';
+    }
+
+    public function accessMode(): string
+    {
+        return $this->isAdministrator() ? $this->administratorAccessMode : $this->role;
+    }
+
+    public function accessRole(): string
+    {
+        return $this->isAdministrator() && $this->accessMode() !== 'admin' ? $this->accessMode() : $this->role;
+    }
+
+    public function useAccessMode(string $mode): void
+    {
+        if (! $this->isAdministrator() || ! in_array($mode, self::ACCESS_MODES, true)) {
+            throw new \InvalidArgumentException('Only administrator accounts can select a supported access mode.');
+        }
+        $this->administratorAccessMode = $mode;
+    }
+
     public function actsAsDirector(): bool
     {
         return $this->isEligible() && ($this->role === 'executive_director'
             || ($this->role === 'division_chief' && $this->hasActiveDelegation('director.oic')));
+    }
+
+    public function hasReadOnlyCareers(): bool
+    {
+        return in_array($this->role, ['division_chief', 'executive_director', 'chief_admin_officer'], true);
     }
 
     public function actsAsDivisionChiefOf(?int $divisionId): bool

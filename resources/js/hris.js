@@ -1,7 +1,20 @@
 import { Modal } from 'bootstrap';
 import { notify, confirmAction } from './ui';
+import { initializeOfficePunch } from './office-punch';
 
 export const feedback = notify;
+
+async function refreshNotificationCount() {
+    const badge = document.querySelector('#notification-unread');
+    if (!badge) return;
+    try {
+        const result = await request('/api/notifications/count');
+        badge.textContent = String(result.unread);
+        badge.hidden = result.unread === 0;
+    } catch { badge.hidden = true; }
+}
+window.addEventListener('notifications:changed', refreshNotificationCount);
+refreshNotificationCount();
 
 export async function request(url, options = {}) {
     const headers = { Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, ...options.headers };
@@ -255,4 +268,5 @@ document.querySelectorAll('[data-print]').forEach(button => button.addEventListe
 // Page modules use the same request, error, form and table behaviors.
 window.HRIS = { request, feedback, fillForm, bindForm, openModal, showDetails, confirm: confirmAction,
     mountCalendar: async (element, options) => (await import('./calendar')).mountCalendar(element, options) };
+initializeOfficePunch();
 document.dispatchEvent(new Event('hris:ready'));

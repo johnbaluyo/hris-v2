@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\EmploymentCertificateController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/verification/{token}', [EmploymentCertificateController::class, 'verify'])->middleware('throttle:20,1');
 
 Route::redirect('/', '/login')->name('home');
 

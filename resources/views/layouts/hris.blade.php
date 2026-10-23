@@ -18,6 +18,8 @@
         <div class="nav-section">WORKSPACE</div>
         <nav class="nav flex-column gap-1" aria-label="Main navigation">
             <a class="nav-link {{ request()->routeIs('dashboard', 'ssi') ? 'active' : '' }}" href="{{ route('dashboard') }}"><span><i class="fa-solid fa-house" aria-hidden="true"></i></span> Employee portal</a>
+            @if(auth()->user()->role === 'applicant')<a class="nav-link {{ request()->is('careers*') ? 'active' : '' }}" href="{{ route('careers') }}"><span><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span> Careers</a>@endif
+            <a class="nav-link {{ request()->is('notifications*') ? 'active' : '' }}" href="{{ route('notifications') }}"><span><i class="fa-solid fa-bell" aria-hidden="true"></i></span> Notifications <span class="badge text-bg-primary ms-auto" id="notification-unread" hidden></span></a>
             @if(auth()->user()->role !== 'applicant')
             <a class="nav-link {{ request()->is('profile*') ? 'active' : '' }}" href="{{ route('pds.index') }}"><span><i class="fa-solid fa-address-card" aria-hidden="true"></i></span> My profile & PDS</a>
             <a class="nav-link {{ request()->is('calendar*') ? 'active' : '' }}" href="{{ route('calendar') }}"><span><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span> Calendars</a>
@@ -29,14 +31,21 @@
             <a class="nav-link {{ request()->is('cto*') ? 'active' : '' }}" href="{{ route('cto') }}"><span><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span> Compensatory time off</a>
             <a class="nav-link {{ request()->is('leave*') ? 'active' : '' }}" href="{{ route('leave') }}"><span><i class="fa-solid fa-calendar-minus" aria-hidden="true"></i></span> Leave</a>
             <div class="nav-section mt-4">DEVELOPMENT & RECORDS</div>
+            <a class="nav-link {{ request()->is('cert*') ? 'active' : '' }}" href="{{ route('certificates') }}"><span><i class="fa-solid fa-file-signature" aria-hidden="true"></i></span> Employment certificates</a>
+            <a class="nav-link {{ request()->is('recognition*') ? 'active' : '' }}" href="{{ route('recognition') }}"><span><i class="fa-solid fa-award" aria-hidden="true"></i></span> Recognition & rewards</a>
+            <a class="nav-link {{ request()->is('wfh-accomplishments*') ? 'active' : '' }}" href="{{ route('wfh-accomplishments') }}"><span><i class="fa-solid fa-house-laptop" aria-hidden="true"></i></span> WFH accomplishments</a>
             <a class="nav-link {{ request()->is('learning-development*') ? 'active' : '' }}" href="{{ route('learning-development') }}"><span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span> Learning & development</a>
             <a class="nav-link {{ request()->is('idp*') ? 'active' : '' }}" href="{{ route('idp') }}"><span><i class="fa-solid fa-road" aria-hidden="true"></i></span> Development plans</a>
             <a class="nav-link {{ request()->is('saln*') ? 'active' : '' }}" href="{{ route('saln') }}"><span><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></span> SALN</a>
             <a class="nav-link {{ request()->is('ipcr*') ? 'active' : '' }}" href="{{ route('ipcr') }}"><span><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span> IPCR</a>
             <a class="nav-link {{ request()->is('concerns*') ? 'active' : '' }}" href="{{ route('concerns') }}"><span><i class="fa-solid fa-comments" aria-hidden="true"></i></span> Concerns</a>
             <a class="nav-link {{ request()->is('personnel-documents*') ? 'active' : '' }}" href="{{ route('personnel-documents') }}"><span><i class="fa-solid fa-folder-closed" aria-hidden="true"></i></span> Personnel documents</a>
+            @cannot('recruitment.manage')<a class="nav-link {{ request()->is('careers*') ? 'active' : '' }}" href="{{ route('careers') }}"><span><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span> Careers</a>@endcannot
             @endif
-            @can('staff.manage')<div class="nav-section mt-4">HR ADMINISTRATION</div><a class="nav-link {{ request()->is('hr/staff*') ? 'active' : '' }}" href="{{ route('staff.index') }}"><span><i class="fa-solid fa-users" aria-hidden="true"></i></span> Staff directory</a>@endcan
+            @if(auth()->user()->hasAbility('staff.manage') || auth()->user()->hasAbility('accounts.manage') || auth()->user()->hasAbility('recruitment.manage'))<div class="nav-section mt-4">HR ADMINISTRATION</div>@endif
+            @can('staff.manage')<a class="nav-link {{ request()->is('hr/staff*') ? 'active' : '' }}" href="{{ route('staff.index') }}"><span><i class="fa-solid fa-users" aria-hidden="true"></i></span> Staff directory</a>@endcan
+            @can('recruitment.manage')<a class="nav-link {{ request()->is('careers*', 'hr/recruitment*') ? 'active' : '' }}" href="{{ route('recruitment') }}"><span><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span> Careers & recruitment</a>@endcan
+            @can('viewAny', \App\Models\RawPunch::class)<a class="nav-link {{ request()->is('hr/raw-attendance*') ? 'active' : '' }}" href="{{ route('raw-attendance') }}"><span><i class="fa-solid fa-clock" aria-hidden="true"></i></span> Raw attendance punches</a>@endcan
             @can('organization.manage')
             <a class="nav-link {{ request()->is('organization/divisions') ? 'active' : '' }}" href="{{ route('organization', 'divisions') }}"><span><i class="fa-solid fa-sitemap" aria-hidden="true"></i></span> Divisions</a>
             <a class="nav-link {{ request()->is('organization/positions') ? 'active' : '' }}" href="{{ route('organization', 'positions') }}"><span><i class="fa-solid fa-briefcase" aria-hidden="true"></i></span> Positions</a>
@@ -46,7 +55,7 @@
             @can('payroll.manage')<a class="nav-link {{ request()->is('hr/payroll*') ? 'active' : '' }}" href="{{ route('payroll') }}"><span><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i></span> Payroll</a>@endcan
             @can('references.manage')<a class="nav-link {{ request()->is('hr/references*') ? 'active' : '' }}" href="{{ route('references') }}"><span><i class="fa-solid fa-sliders" aria-hidden="true"></i></span> Reference settings</a>@endcan
         </nav>
-        <div class="sidebar-footer mt-auto pt-5 d-flex align-items-center gap-2"><x-account-avatar :user="auth()->user()" /><div><span class="badge text-bg-light mb-2">{{ str_replace('_', ' ', auth()->user()->role) }}</span><p class="mb-0 small">{{ auth()->user()->name }}</p></div></div>
+        <div class="sidebar-footer mt-auto pt-5 d-flex align-items-center gap-2"><x-account-avatar :user="auth()->user()" /><div><span class="badge text-bg-light mb-2">{{ str_replace('_', ' ', auth()->user()->accessRole()) }}</span><p class="mb-0 small">{{ auth()->user()->name }}</p></div></div>
     </div>
 </aside>
 <div class="hris-shell">
@@ -55,6 +64,7 @@
         <span class="small text-body-secondary d-none d-sm-block">Human Resource Information System</span>
         <div class="ms-auto d-flex gap-2 align-items-center">
             <x-theme-toggle />
+            <x-access-mode-switch />
             <a href="{{ route('profile.edit') }}" class="d-flex align-items-center gap-2 text-decoration-none" aria-label="Account"><x-account-avatar :user="auth()->user()" /><span class="small d-none d-md-inline text-body">Account</span></a>
             <form method="POST" action="{{ route('logout') }}">@csrf<button class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i><span class="ms-1 d-none d-sm-inline">Sign out</span><span class="visually-hidden d-sm-none">Sign out</span></button></form>
         </div>

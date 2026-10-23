@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\RawPunch;
 use App\Models\ServiceClient;
 use App\Models\User;
 use App\Policies\EmployeePolicy;
+use App\Policies\RawPunchPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         Gate::policy(User::class, EmployeePolicy::class);
+        Gate::policy(RawPunch::class, RawPunchPolicy::class);
         RateLimiter::for('attendance-ingest', function (Request $request) {
             $client = $request->attributes->get('service_client');
 

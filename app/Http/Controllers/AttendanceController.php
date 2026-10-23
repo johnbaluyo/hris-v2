@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRemark;
 use App\Models\AttendanceRevision;
-use App\Models\CalendarEvent;
 use App\Models\DailyAttendance;
 use App\Models\RawPunch;
 use App\Models\User;
 use App\Services\Attendance\AttendanceService;
+use App\Services\Attendance\OfficePunchAccess;
+use App\Services\Attendance\WfhSchedule;
 use App\Support\Audit;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -20,12 +21,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
-    public function index(Request $request, ?User $employee = null): View
+    public function index(Request $request, WfhSchedule $wfhSchedule, OfficePunchAccess $officePunchAccess, ?User $employee = null): View
     {
         $employee ??= $request->user();
         Gate::authorize('attendance', $employee);
 
-        return view('hris.attendance', compact('employee'));
+        $wfh = $wfhSchedule->isAvailableToday();
+        $officeAccess = $officePunchAccess->availability($request->user());
+
+        return view('hris.attendance', compact('employee', 'wfh', 'officeAccess'));
     }
 
     /** @return array{0: string, 1: string} */
@@ -63,18 +67,26 @@ class AttendanceController extends Controller
         return response()->json($query->orderByDesc('punched_at')->paginate(10, ['id', 'punched_at', 'device', 'record_type', 'anviz_log_id']));
     }
 
-    public function clock(Request $request): JsonResponse
+    public function clock(Request $request, WfhSchedule $wfhSchedule, OfficePunchAccess $officePunchAccess): JsonResponse
     {
         $user = $request->user();
         abort_if($user->role === 'applicant' || ! $user->atms_id, 422, 'An employee attendance identity is required.');
         $data = $request->validate(['wfh' => 'required|boolean', 'user_id' => 'prohibited', 'user_atms_id' => 'prohibited', 'atms_id' => 'prohibited', 'time_log' => 'prohibited']);
         if ($data['wfh']) {
-            $today = today('Asia/Manila')->toDateString();
-            abort_unless(CalendarEvent::where('event_type', 'Work From Home')->whereDate('starts_at', '<=', $today)->whereDate('ends_at', '>=', $today)->exists(), 422, 'WFH capture is unavailable for this date.');
+            abort_unless($wfhSchedule->isAvailableToday(), 422, 'WFH capture is available only on Wednesdays or dates covered by a Work From Home calendar event.');
+        } else {
+            abort_unless($officePunchAccess->isAvailable($user), 422, 'Office punches require an active access window set by an administrator.');
         }
         RawPunch::create(['user_id' => $user->id, 'atms_id' => $user->atms_id, 'punched_at' => now('Asia/Manila'), 'device' => $data['wfh'] ? 'WEB WFH' : 'WEB APP']);
 
         return response()->json(['message' => 'Attendance punch recorded using the server time.'], 201);
+    }
+
+    public function clockAvailability(Request $request, OfficePunchAccess $officePunchAccess): JsonResponse
+    {
+        Gate::authorize('attendance', $request->user());
+
+        return response()->json($officePunchAccess->availability($request->user()));
     }
 
     public function rebuild(Request $request, User $employee, AttendanceService $service): JsonResponse

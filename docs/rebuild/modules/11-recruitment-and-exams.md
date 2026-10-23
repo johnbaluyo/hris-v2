@@ -1,5 +1,7 @@
 # 11 — Recruitment and applicant examinations
 
+> Replacement implementation updated 23 October 2026. Checked technical build items have source and regression evidence in [the remaining-modules handoff](../../modules/REMAINING_MODULES_HANDOFF.md). Production-policy acceptance, official certificate generation and legacy reconciliation remain separate gates; unchecked items are not claimed complete.
+
 ## Purpose and evidence
 
 Manage vacancies, applicant accounts and documents, applications, examination question banks, position questionnaires, evaluator assignments, timed examination sessions, and printable answer reports.
@@ -62,16 +64,16 @@ Application options in `resources/views/recruitment/pages/applications.blade.php
 
 ## Build checklist
 
-- [ ] Define vacancies, applicant profiles, applications, question-bank versions, questionnaire assignments, evaluator assignments, attempts, answers, and file metadata.
+- [x] Define vacancies, applicant profiles, applications, question-bank versions, questionnaire assignments, evaluator assignments, attempts, answers, and file metadata.
 - [ ] Migrate applicant IDs separately from employee IDs while preserving the shared legacy account mapping.
-- [ ] Implement HR-only administration and applicant self-service policies on every endpoint, including attachments and reports.
+- [x] Implement HR-only administration and applicant self-service policies on every endpoint, including attachments and reports.
 - [ ] Implement vacancy open/close/archive, application uniqueness rules, status/remark history, and test eligibility.
-- [ ] Support all four question types, optional images, category time limits, questionnaires, and evaluator role assignment.
-- [ ] Start an attempt from server configuration and snapshot its questions/order/time limit; make submit transactional/idempotent.
-- [ ] Reject answers for foreign/unknown questions, expired/ineligible attempts, and supplied alternative user IDs.
+- [x] Support all four question types, optional images, category time limits, questionnaires, and evaluator role assignment.
+- [x] Start an attempt from server configuration and snapshot its questions/order/time limit; make submit transactional/idempotent.
+- [x] Reject answers for foreign/unknown questions, expired/ineligible attempts, and supplied alternative user IDs.
 - [ ] Implement private validated requirements/evaluation uploads and map all legacy case/path variants.
 - [ ] Recreate printable answer reports and explicitly scope any new grading/ranking workflow after resolving requirements.
-- [ ] Inventory missing/broken endpoints and retire them with a documented compatibility mapping.
+- [x] Inventory missing/broken endpoints and retire them with a documented compatibility mapping.
 
 ## Acceptance checklist
 

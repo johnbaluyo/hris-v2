@@ -16,7 +16,7 @@
 - All timestamps and calendar dates use Asia/Manila. Archive and termination are independent. Attendance IDs normalize leading zeros and reject all-zero values.
 - Position changes are transactional with old/new assignment, actor and assumption date. Per the user's 22 October 2026 decision, every position is exclusive to one employee, including nonplantilla positions; a unique database index enforces this rule. Archiving or terminating an employee preserves their assignment. Effective delegations cannot overlap for the same employee/division/ability.
 - PDS uses validated section payloads, append-only snapshot sections and repeatable rows; preserve version/audit history. Blank optional fields clear; numeric zero survives. Print output is a complete data review, **not a certified government form**: authoritative edition/labels are absent (D16).
-- Attendance calculator `office-v1` uses documented office/WFH arrival/exit rules and 4/5-day schedules; worked minutes honor explicit lunch gaps, clamp at the selected office/WFH exit, and truncate seconds. This resolves the documented conflicting 18:00/20:00/21:00 calculators explicitly; no parity with every historical branch is claimed. Raw logs remain immutable; incomplete days require review. Recalculation replaces derived values while retaining revisions; manual overrides require explicit replacement. No inferred overnight or historic financial policy.
+- Attendance calculator `office-v1` uses documented office/WFH arrival/exit rules and 4/5-day schedules; worked minutes honor explicit lunch gaps, clamp at the selected office/WFH exit, and truncate seconds. This resolves the documented conflicting 18:00/20:00/21:00 calculators explicitly; no parity with every historical branch is claimed. Original raw evidence is retained when administrators correct punches; incomplete days require review. Recalculation replaces derived values while retaining revisions; manual overrides require explicit replacement. No inferred overnight or historic financial policy.
 - Partner login remains disabled until a partner approves a supported protocol (D04). Ordinary validated application links do not receive credentials. Sync uses explicitly configured partners/credentials only, queued with auditable runs and optional documented 405 compatibility.
 - Service credentials are hashed and scoped separately from human sessions. Collector events are unique by client/source epoch/external ID, bounded and atomic. Unknown attendance IDs remain raw evidence for reconciliation.
 
@@ -490,3 +490,100 @@ Verification: five dedicated seeder tests passed with 695 assertions, covering v
 - [x] Dedicated feature tests cover page access, IDP item stability/supervisor scope/division budget totals, PDS training matrix classification, exact-cent SALN totals/privacy, nested IPCR review/rating scope, concern transitions, private attachments, returned document versioning, employee-specific calendar effects, and salary-period overlap rejection.
 - [x] The additive migration rolls back/reapplies on isolated SQLite and applies on local MySQL. MySQL verification caught and corrected a generated index-name length issue; the six empty tables from that failed attempt were verified empty, removed, and recreated by the successful migration. No existing table or user record was removed.
 - [x] PHPStan level 7, Pint, Blade compilation, production Vite build, and a focused mobile Playwright run for all seven module pages pass.
+
+## Modules 11 and 17–20 — 23 October 2026, Asia/Manila
+
+Detailed routes, access rules, schema mappings, operational configuration, intentional compatibility changes and production gates: [remaining-modules handoff](REMAINING_MODULES_HANDOFF.md).
+
+### 11 Recruitment and examinations
+
+- [x] HR vacancy/category/question/questionnaire/evaluator administration; applicant self-profile and unique applications to open vacancies; status/remark/test-eligibility history.
+- [x] Private general/application requirement PDFs and evaluation documents. HR and assigned evaluators can access relevant requirements; applicants cannot read evaluation files or another applicant's records.
+- [x] Multiple choice, true/false, essay and identification questions, optional question/choice images, category time limits, private exam image authorization and retained historical question versions in attempts.
+- [x] Server-started application/category attempts snapshot category/questions/choices/images/order/deadline. Resume does not extend time; invalid answers, expired/foreign/disabled attempts and supplied alternative identities fail. Final submission is transactional and idempotent; blanks are explicit.
+- [x] Applicant career/exam screens and HR/evaluator printable answer reports are functional in browser tests.
+- [ ] Retake rules, grading/pass marks, evaluator scoring, application-transition policy, onboarding, public provisioning and legacy import require the documented owner decisions/source data. One attempt per application/category is the implemented provisional default; automatic scoring and public registration remain disabled.
+
+### 17 Employment certificates
+
+- [x] Owner/HR requests and records, former non-Intern manual certificates, duplicate-pending protection, guarded receive/acknowledge/approve/reject/issue/complete states and append-only actor/reason history.
+- [x] Annual compensation totals use integer cents; forged posted totals cannot change the result. Employment and issuer snapshots, stable references and private completed PDF artifacts survive later employee/position edits.
+- [x] An approved signer configuration gates issuance. Public verification is disabled by default and, when explicitly enabled, returns only reference/type/issue date for completed issued records. Unknown/unissued references return 404.
+- [x] Responsive request/processing/file screens and an explicitly labeled printable record summary are available.
+- [ ] Official generated PDF/QR output, approved legal wording/branding/signature assets, disclosure acceptance, revocation/reissue and original-reference migration remain pending D10. Uploaded completed PDFs are supported; browser printing of a record summary is not claimed as official generated output.
+
+### 18 Recognition and rewards
+
+- [x] HR-only event create/edit/archive, explicit dates, normalized snapshotted nominees, eligibility/self-vote settings, unique immutable ballots and event/nominee membership checks.
+- [x] Individual voters remain private. Counts are separate from HR-confirmed winners; no automatic tie-break/adjudication is invented. Archival retains ballots/history.
+- [x] Provisional attendance reports accept explicit date bounds, leave-type selection and recent-hire choice, reuse stored DTR and latest leave state, sort numeric minutes correctly above 99 hours and handle leap-day coverage.
+- [x] Event/nominee/voting/winner/statistics screens use existing asynchronous forms and responsive tables.
+- [ ] The provisional one-ballot/confidentiality defaults, final voter/nominee policy, award/ranking eligibility and ties need HR acceptance before production. Legacy repeated ballots/comma lists require a reconciled source dataset.
+
+### 19 WFH accomplishments
+
+- [x] The user's Wednesday-or-calendar-event date rule is shared with dashboard/attendance punches. No fixed 2026 accomplishment window remains.
+- [x] Staff/on-behalf-of entry, return/resubmit, owner edit/archive and chief/Director review use division snapshots, active employee/non-Intern eligibility and existing dated OIC authority. Self-review and cross-division mutation/printing are rejected.
+- [x] Draft consolidate/refresh/archive, chief sign and head approve are serialized with division-row locks. Signed dates cannot accept late changes. Normalized report lines preserve employee/division/accomplishment/fallback/source/signer/head snapshots.
+- [x] Latest full-day Approved leave precedes onsite/no-record fallback. Cancelled leave with an old Approved row no longer qualifies; `WEB WFH` alone is not onsite. Unknown device evidence is not silently reassigned.
+- [x] Staff/chief/head screens, derived dashboard task reminders and scoped division/agency print reports are implemented. Transfers, later name changes and new logs do not rewrite signed reports.
+- [ ] Partial-day leave precedence, exceptional reopen/return, historical eligibility and completeness thresholds remain business decisions. Legacy header-only reports require explicitly labeled reconstructions or independently retained original artifacts.
+
+### 20 Notifications
+
+- [x] Content/audience/receipt schema, explicit typed audiences, publication-time active recipient snapshots, per-user read/dismiss and bulk actions, unread badge, ten-row list and numeric mutation IDs.
+- [x] Browser publishing requires a named ability. External producer credentials/scopes are separate from attendance; recipients resolve by matching active ID/email; event replay is idempotent and conflicting content returns 409.
+- [x] Local paths/approved HTTPS destinations and presentation values are validated. URLs never acquire SSI credentials. Broadcast applicants are excluded; role/personal audience isolation and expiry boundaries are tested.
+- [x] Certificate/WFH result notices publish after source commit. Workflow-derived WFH reminders remain authoritative. Read/count endpoints do not mutate expiry state; the hourly expiry command preserves audience/receipt history.
+- [ ] D04/D09/D13 production approval, partner contract rollout, durable delivery/retry expectations, historical shared-flag mapping and retention/purge policy remain open. No outbound email or live partner notification was sent.
+
+### Executed verification and local application
+
+- [x] Backend regression suite: **167 tests, 165 passed, two existing disabled-registration tests skipped, 1,871 assertions**, with no risky tests. The subsequently added notification-credential provisioning command also passes its focused suite: **five tests / 48 assertions**, including protection against overwriting an attendance credential. No local producer credential was issued.
+- [x] Full Playwright suite: **14 passed**, including the ten existing workflows plus HR question-bank → applicant exam submission, certificate/notification/recognition forms, WFH chief review/signing and five-module mobile/unique-label checks. No page-script errors were observed in the responsive module sweep.
+- [x] After the final general-requirement access/history changes, the recruitment and responsive browser checks passed again (**two focused workflows**). Desktop/mobile screenshots were visually inspected.
+- [x] PHPStan level 7: zero errors. Pint, Blade compilation and the production Vite build pass. Browser fixtures use their own SQLite database; backend tests use `:memory:`.
+- [x] The additive migration rolls back/reapplies in isolated tests and applied successfully to the explicitly verified **local MySQL `db_hris_v2`** database. No existing personnel tables were replaced, reset or seeded.
+- [x] Fictional desktop/mobile screenshots are under ignored `storage/framework/testing/`. Existing WFH punch changes from the preceding task remain preserved.
+- [ ] Production acceptance and legacy reconciliation are not asserted. The supplied source references/forms/policy decisions remain the outstanding external evidence described in the handoff.
+
+## Careers navigation and temporary office punch access — 23 October 2026
+
+- [x] HR recruitment navigation moved into HR Administration. Staff/chief/Director Careers navigation is last under Development & Records; applicants retain a workspace Careers link. Chief/Director roles cannot administer recruitment or upload evaluation files, including with an evaluator assignment or explicit recruitment-management grant.
+- [x] Added audited administrator-only office-punch access windows with Manila start/end timestamps, all-employee or selected-active-employee scope, and idempotent revocation. No window is enabled automatically.
+- [x] Attendance renders office punches disabled outside an active window and offers duration configuration only to administrators. Availability refreshes at schedule boundaries, on tab visibility and periodically; the server independently rejects premature, expired, revoked and out-of-scope office punches.
+- [x] WFH date eligibility and device ingestion remain independently enforced. An office capture window does not authorize WFH capture and a WFH day does not authorize office web capture.
+- [x] Backend regression: **178 tests, 176 passed, two existing public-registration tests skipped, 1,981 assertions**. Coverage includes Manila start/end boundaries, no-window rejection, selected employees, overlapping windows/revocation, invalid periods, administrator authorization, recruitment navigation order and chief/Director read-only enforcement.
+- [x] Two targeted browser workflows passed for navigation and administrator duration creation/punch/revocation, including disabled staff controls and mobile overflow checks.
+- [x] Full browser regression suite: **16 passed**. PHPStan level 7, Pint, Blade compilation and whitespace checks pass. The administrator Attendance mobile screenshot was visually inspected.
+- [x] Additive office-window migration applied to verified local MySQL `db_hris_v2`. The local application has no automatic office-access grant; an administrator must create an actual access window.
+
+### Office punch clarification — all employees and employee portal
+
+- [x] The user's clarification supersedes the earlier optional employee scope: every administrator-enabled window applies to all active employees. Removed scope selection from the configuration form and reject employee-specific API inputs. Historical scope metadata is retained without restricting current access.
+- [x] Employee Portal now includes **Record office punch** directly beside **View my attendance**. The office button is hidden in the initial HTML outside an active window and automatically shown/hidden as availability changes. Attendance uses the same button component and JavaScript behavior.
+- [x] Portal punches use the authenticated attendance endpoint and server timestamp. Expired/revoked windows remain rejected even if a page is stale; successful punches do not navigate away from the portal. Existing WFH capture and navigation changes are preserved.
+- [x] Focused backend checks passed: **42 tests / 428 assertions**, including Manila start/end boundaries on dashboard, SSI portal and attendance, global access, overlapping windows, revocation, rejected scoped configuration and existing-window compatibility. Production Vite build and PHPStan passed.
+- [x] This clarification requires no schema migration or personnel-data reset.
+- [x] Full backend regression: **179 tests, 177 passed, two existing public-registration tests skipped, 2,021 assertions**. Updated Blade compilation, PHPStan, Pint, production assets and whitespace checks passed.
+- [x] Full browser regression: **16 passed**, including portal button placement/visibility, staff office punching, global administrator access and revocation while preserving the portal page.
+
+## Administrator raw attendance corrections - 23 October 2026
+
+- [x] Added **HR Administration > Raw attendance punches** (`/hr/raw-attendance`): a ten-row searchable, date-filtered list across all employees, former employees and unmatched captures. Employee match filters and paginated correction history are included.
+- [x] Only `system_admin` may access the module or its APIs. Explicit raw-management grants do not permit HR, staff, chiefs, directors or applicants to bypass the role restriction.
+- [x] Administrators can correct Manila punch date/time (including seconds), device and record type with a required reason. Each actual change stores actor/time and before/after values in `raw_punch_revisions` and the audit log. Employee and collector identity fields remain protected; no creation/deletion or reassignment endpoint is added.
+- [x] First-edit source evidence remains preserved across later corrections. Collector retries match the original capture without overwriting corrections, source cursors stay unchanged, and conflicting batches still roll back atomically.
+- [x] Corrections and affected old/new DTR recalculation commit together. Sorted per-day locks and optimistic versions protect concurrent edits; stale submissions return 409. Manual DTR overrides remain intact. Unmatched captures retain history without generating a DTR for an unknown employee.
+- [x] Backend regression: **186 tests, 184 passed, two existing public-registration skips, 2,114 assertions**. Tests cover endpoint authorization including explicit grants, former/unmatched employees, pagination, protected fields, invalid/future values, exact seconds, no-op edits, stale submissions, original evidence, collector replays/conflicts/cursors, old/new dates, override retention, rollback on calculation failure, and migration rollback/reapply.
+- [x] Full browser regression: **18 passed**, including administrator edit/history/DTR updates without navigation, staff access denial and mobile overflow. PHPStan level 7, Pint, Blade compilation and whitespace checks pass.
+- [x] Applied additive migration `2026_10_23_000003_add_raw_punch_corrections.php` only to verified local MySQL **`db_hris_v2`**. Existing counts remained unchanged: **50 users, 2,591 raw punches, 756 daily attendance rows**. Existing punches were not edited by setup.
+
+## Administrator access-mode selector - 23 October 2026
+
+- [x] Added **Account access** beside the theme toggle in the HRIS header and account-settings layouts. Administrator accounts can choose **Admin**, **Staff**, or **HR** and return to Employee Portal after switching. The selector remains available in all three modes and is absent for other account roles.
+- [x] Admin is the default and preserves existing administrator permissions and explicit account grants. HR uses the HR permission set. Staff allows employee access only. Restricted modes ignore administrator grants/delegations, including raw-punch and office-window administration, and every browser request applies the selected mode before authorization.
+- [x] Selection is bound to the current session and administrator identity. Other sessions remain independent, logout clears the selection, unsupported modes/other-user submissions are rejected, and each actual switch records old/new mode and actor in the audit log. The permanent account role is never changed, including during profile saves. No schema migration or personnel-data rewrite is needed.
+- [x] HR mode can certify requests while Staff mode cannot. Administrators retain their own employee workflows; eligible administrator WFH submissions are included in division consolidation. New User instances match the existing database staff-role default before reload.
+- [x] Backend regression: **194 tests, 192 passed, two existing public-registration skips, 2,222 assertions**. Coverage includes all three modes, route/read/write enforcement, ignored grants, mode recovery, session identity/isolation/logout, validation, audit/no-op behavior, permanent-role preservation, HR certification and employee WFH review/consolidation.
+- [x] Full browser suite: **20 passed**, including access switching beside the theme toggle, settings navigation, independent sessions, forged staff submissions and mobile overflow. PHPStan level 7, Pint, production assets and Blade compilation pass. The HR-mode mobile screenshot was visually inspected.

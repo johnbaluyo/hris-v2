@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Hris;
 
+use App\Models\OfficePunchWindow;
 use App\Models\RawPunch;
 use App\Models\ServiceClient;
 use App\Models\User;
 use App\Models\WorkSchedule;
 use App\Services\Attendance\AttendanceService;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -80,8 +82,10 @@ class AttendanceTest extends TestCase
 
     public function test_employee_clock_identity_comes_from_the_session_and_other_records_are_forbidden(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-10-20 08:00:00', 'Asia/Manila'));
         $owner = User::factory()->create(['atms_id' => '9001']);
         $other = User::factory()->create(['atms_id' => '9002']);
+        OfficePunchWindow::create(['starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'all_employees' => true, 'reason' => 'Synthetic authorized window', 'created_by' => User::factory()->create(['role' => 'system_admin'])->id]);
         $this->actingAs($owner)->postJson('/attendance/clock', ['wfh' => false, 'user_atms_id' => $other->atms_id])->assertUnprocessable();
         $this->postJson('/attendance/clock', ['wfh' => false])->assertCreated();
         $this->assertDatabaseHas('raw_punches', ['atms_id' => '9001', 'device' => 'WEB APP']);

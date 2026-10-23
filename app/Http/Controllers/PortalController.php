@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CalendarEvent;
+use App\Models\Division;
 use App\Models\PortalItem;
 use App\Models\PrivateFile;
 use App\Models\RawPunch;
 use App\Models\User;
+use App\Models\WfhAccomplishment;
+use App\Models\WfhReport;
+use App\Services\Attendance\OfficePunchAccess;
+use App\Services\Attendance\WfhSchedule;
 use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +21,7 @@ use Illuminate\View\View;
 
 class PortalController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, WfhSchedule $wfhSchedule, OfficePunchAccess $officePunchAccess): View
     {
         $user = $request->user();
         if ($user->role === 'applicant') {
@@ -28,12 +32,18 @@ class PortalController extends Controller
             ->latest('id')->get()->groupBy('kind');
         $recent = RawPunch::where('user_id', $user->id)->where('punched_at', '>=', today('Asia/Manila')->subDays(2))
             ->orderBy('punched_at')->get()->groupBy(fn ($punch) => $punch->punched_at->toDateString())->map(fn ($punches) => $punches->first());
-        $wfh = CalendarEvent::where('event_type', 'Work From Home')->whereDate('starts_at', '<=', $today)->whereDate('ends_at', '>=', $today)->exists();
+        $wfh = $wfhSchedule->isAvailableToday();
+        $officeAccess = $officePunchAccess->availability($user);
+        $wfhTasks = WfhAccomplishment::where('status', 'for approval')->whereNull('archived_at')->where('user_id', '!=', $user->id)
+            ->whereIn('division_id', Division::all()->filter(fn ($division) => $user->actsAsDivisionChiefOf($division->id))->pluck('id'))->count();
+        if ($user->actsAsDirector()) {
+            $wfhTasks = WfhReport::where('status', 'for approval')->whereNull('archived_at')->count();
+        }
         $birthdays = User::where('is_archived', false)->whereIn('employee_type', array_diff(config('hris.employee_types'), ['Applicant']))
             ->whereNull('termination_date')->whereMonth('birthday', today('Asia/Manila')->month)->whereDay('birthday', today('Asia/Manila')->day)
             ->orderBy('name')->get(['id', 'name']);
 
-        return view('hris.dashboard', compact('items', 'recent', 'wfh', 'birthdays'));
+        return view('hris.dashboard', compact('items', 'recent', 'wfh', 'birthdays', 'wfhTasks', 'officeAccess'));
     }
 
     public function manage(): View

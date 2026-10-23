@@ -1,5 +1,7 @@
 # 18 — Recognition, rewards and attendance ranking
 
+> Replacement implementation updated 23 October 2026. Checked technical build items have source and regression evidence in [the remaining-modules handoff](../../modules/REMAINING_MODULES_HANDOFF.md). Production-policy acceptance, official certificate generation and legacy reconciliation remain separate gates; unchecked items are not claimed complete.
+
 ## Purpose and evidence
 
 Maintain recognition events with nominee/winner lists, collect votes, display vote counts, and generate attendance statistics used to select attendance-based awardees.
@@ -38,8 +40,8 @@ Attendance ranking depends on agreed DTR computation, holiday/workweek logic, le
 
 ## Build checklist
 
-- [ ] Define event, normalized nominees, ballots/votes, approved winner records and audit history with legacy mappings.
-- [ ] Implement HR-only event create/update/archive and explicit coverage/recognition dates.
+- [x] Define event, normalized nominees, ballots/votes, approved winner records and audit history with legacy mappings.
+- [x] Implement HR-only event create/update/archive and explicit coverage/recognition dates.
 - [ ] Implement approved voter eligibility/limits, event open/closed checks, nominee membership and self-vote/tie policies.
 - [ ] Enforce ballot uniqueness transactionally and decide visibility/privacy of individual voters versus aggregate results.
 - [ ] Implement manual or approved automatic winner confirmation separately from vote/attendance result calculation.

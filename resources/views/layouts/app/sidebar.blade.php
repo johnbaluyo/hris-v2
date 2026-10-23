@@ -31,7 +31,7 @@
             </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
-            <div class="flex justify-center py-2"><x-theme-toggle /></div>
+            <div class="flex justify-center items-center gap-2 py-2"><x-theme-toggle /><x-access-mode-switch /></div>
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -40,6 +40,7 @@
 
             <flux:spacer />
             <x-theme-toggle />
+            <x-access-mode-switch />
 
             <flux:dropdown position="top" align="end">
                 <flux:profile

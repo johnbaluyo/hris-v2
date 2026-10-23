@@ -4,6 +4,7 @@ use App\Models\Division;
 use App\Models\Holiday;
 use App\Models\Position;
 use App\Models\PositionAssignment;
+use App\Models\RawPunch;
 use App\Models\User;
 use App\Services\EmploymentHistory;
 use Illuminate\Contracts\Console\Kernel;
@@ -24,7 +25,7 @@ $admin = User::factory()->create(['name' => 'Example Administrator', 'email' => 
     'password' => 'Browser-test-password-123!', 'role' => 'system_admin', 'division_id' => $division->id,
     'position_id' => $adminPosition->id, 'date_hired' => '2020-01-01', 'atms_id' => '9001']);
 app(EmploymentHistory::class)->backfill($admin, $admin->id);
-foreach (['staff.manage', 'pds.read', 'pds.write', 'attendance.read', 'attendance.correct', 'attendance.export'] as $ability) {
+foreach (['staff.manage', 'pds.read', 'pds.write', 'attendance.read', 'attendance.correct', 'attendance.export', 'recruitment.manage', 'certificates.manage', 'recognition.manage'] as $ability) {
     DB::table('ability_grants')->insert(['user_id' => $admin->id, 'ability' => $ability]);
 }
 for ($index = 1; $index <= 15; $index++) {
@@ -35,6 +36,12 @@ for ($index = 1; $index <= 15; $index++) {
         'position_id' => $employeePosition->id, 'date_hired' => '2020-01-01', 'atms_id' => (string) (9100 + $index)]);
     PositionAssignment::create(['user_id' => $employee->id, 'position_id' => $employeePosition->id, 'actor_id' => $admin->id, 'assume_date' => '2020-01-01']);
     app(EmploymentHistory::class)->backfill($employee, $admin->id);
+    if ($index === 2) {
+        RawPunch::create(['atms_id' => $employee->atms_id, 'punched_at' => today('Asia/Manila')->subDay()->format('Y-m-d').' 08:00:59', 'device' => 'EXAMPLE-READER']);
+    }
 }
 Position::create(['title' => 'Example New Employee Position', 'division_id' => $division->id, 'classification' => 'Staff']);
 Holiday::create(['name' => 'Example Agency Holiday', 'holiday_date' => '2026-10-22', 'type' => 'Regular']);
+User::factory()->create(['name' => 'Example Applicant', 'email' => 'browser-applicant@example.test', 'password' => 'Browser-test-password-123!', 'role' => 'applicant', 'employee_type' => 'Applicant']);
+Position::create(['title' => 'Example Recruitment Position', 'division_id' => $division->id, 'classification' => 'Staff']);
+User::factory()->create(['name' => 'Example Division Chief', 'email' => 'browser-chief@example.test', 'password' => 'Browser-test-password-123!', 'role' => 'division_chief', 'division_id' => $division->id, 'employee_type' => 'Permanent']);

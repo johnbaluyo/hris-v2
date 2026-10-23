@@ -1,5 +1,7 @@
 # 17 — Certificates of employment (COE)
 
+> Replacement implementation updated 23 October 2026. Checked technical build items have source and regression evidence in [the remaining-modules handoff](../../modules/REMAINING_MODULES_HANDOFF.md). Production-policy acceptance, official certificate generation and legacy reconciliation remain separate gates; unchecked items are not claimed complete.
+
 ## Purpose and evidence
 
 Process current employees' certificate requests, let HR generate certificates with pay/benefit details, produce manual certificates for former employees, and expose QR-linked authenticity pages.
@@ -48,13 +50,13 @@ UI/handler states include `For Acknowledgment` → `Received` → `Acknowledged`
 
 ## Build checklist
 
-- [ ] Define certificate request, current/manual type, issuance snapshot, compensation lines, status history, attachments and stable public verification tokens.
-- [ ] Implement authenticated employee/HR/manual administration policies and explicit field allowlists.
+- [x] Define certificate request, current/manual type, issuance snapshot, compensation lines, status history, attachments and stable public verification tokens.
+- [x] Implement authenticated employee/HR/manual administration policies and explicit field allowlists.
 - [ ] Implement receive/acknowledge/approve/reject/generate/complete transitions with audited actor/time and duplicate-pending rules.
-- [ ] Validate annual compensation units and compute all totals on the server with exact decimals.
+- [x] Validate annual compensation units and compute all totals on the server with exact decimals.
 - [ ] Preserve employee/assignment/hire/end/signatory information as issued; retain historical references and PDFs.
 - [ ] Generate current/manual PDFs and QR codes through testable services with configurable approved branding/signature assets.
-- [ ] Implement private file uploads and completion downloads without filename collisions.
+- [x] Implement private file uploads and completion downloads without filename collisions.
 - [ ] Build limited public verification and invalid/revoked/not-issued results; add rate limiting and stable reference migration.
 - [ ] Reconcile earlier `coe`, employed/manual tables, string amounts, reference collisions and missing assets/files; distinguish preserved completed-file originals from reconstructed historical PDFs.
 

@@ -17,3 +17,6 @@ body, button, input, select, textarea, .swal2-popup { font-family: var(--app-fon
 .swal2-toast .swal2-html-container { overflow-wrap: anywhere; }
 .swal2-toast { max-width: calc(100vw - 2rem); }
 @media print { .swal2-container, .theme-toggle { display: none !important; } }
+.account-access-switch { margin: 0; }
+.account-access-select { width: 6rem; min-height: 2rem; padding: .3rem .4rem; border: 1px solid #89939f; border-radius: .4rem; font: inherit; font-size: .8rem; background: var(--bs-body-bg, var(--color-zinc-50, #fff)); color: var(--bs-body-color, var(--color-zinc-800, #172c46)); }
+.dark .account-access-select { background: #27272a; color: #fafafa; }
