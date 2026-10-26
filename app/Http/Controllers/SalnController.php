@@ -121,8 +121,8 @@ class SalnController extends Controller
     private function totals(SalnFiling $filing): array
     {
         $entries = $filing->relationLoaded('entries') ? $filing->entries : $filing->entries()->get();
-        $assets = $entries->whereIn('section', ['real_property', 'personal_property'])->sum(fn (SalnEntry $entry) => (int) round(((float) $entry->declared_amount) * 100));
-        $liabilities = $entries->where('section', 'liability')->sum(fn (SalnEntry $entry) => (int) round(((float) $entry->declared_amount) * 100));
+        $assets = $entries->whereIn('section', ['real_property', 'real_properties', 'personal_property', 'personal_properties'])->sum(fn (SalnEntry $entry) => (int) round(((float) $entry->declared_amount) * 100));
+        $liabilities = $entries->whereIn('section', ['liability', 'liabilities'])->sum(fn (SalnEntry $entry) => (int) round(((float) $entry->declared_amount) * 100));
 
         return ['total_assets' => number_format($assets / 100, 2, '.', ''), 'total_liabilities' => number_format($liabilities / 100, 2, '.', ''), 'net_worth' => number_format(($assets - $liabilities) / 100, 2, '.', '')];
     }

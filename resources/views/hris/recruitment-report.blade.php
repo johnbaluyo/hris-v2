@@ -1,12 +1,8 @@
-@extends('layouts.report')
-@section('title', 'Applicant answer report')
-@section('content')
-<h1>Applicant answer report</h1><p>{{ $application->profile_snapshot['name'] }} · {{ $application->vacancy->position->title }}</p>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>PSRTI - exam answers</title><style>body{font-family:Arial,sans-serif;margin:25px}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #000;padding:8px;vertical-align:top}.text-center{text-align:center}.question-image{max-width:350px;max-height:220px}.no-print{position:fixed;right:12px;top:12px}@media print{.no-print{display:none}section{break-inside:avoid}}</style></head><body>
+<button class="no-print" onclick="window.print()">Print</button><p><b>Applicant:</b> {{ $application->profile_snapshot['name'] }}</p><p><b>Position:</b> {{ $application->vacancy->position->title }}{{ $application->vacancy->position->salary_grade ? ' - ('.$application->vacancy->position->salary_grade.')' : '' }}</p>
 @forelse($application->attempts as $attempt)
-<h2>{{ $attempt->category_snapshot['name'] }}</h2><p>Started: {{ $attempt->started_at->format('d M Y g:i A') }} Manila · {{ $attempt->submitted_at ? 'Submitted '.$attempt->submitted_at->format('d M Y g:i A') : 'Not submitted' }}</p>
-@foreach($attempt->questions as $question)<section><h3>{{ $loop->iteration }}. {{ $question['question'] }}</h3>@if($question['image_file_id'])<img src="/recruitment/images/{{ $question['image_file_id'] }}" alt="Question illustration">@endif
-@foreach($question['choices'] ?? [] as $choice)<p>{{ $choice['id'] }}. {{ $choice['text'] }}@if($choice['image_file_id'] ?? null)<br><img src="/recruitment/images/{{ $choice['image_file_id'] }}" alt="Choice illustration">@endif</p>@endforeach
-<p><strong>Response:</strong> {{ $attempt->answers[$question['id']] ?? 'No response' }}</p></section>@endforeach
+<table><thead><tr><td colspan="2" class="text-center"><b>{{ $attempt->category_snapshot['name'] }}</b></td></tr><tr><th width="60%">QUESTION</th><th>ANSWER</th></tr></thead><tbody>
+@foreach($attempt->questions as $question)<tr><td><b>{{ $loop->iteration }}. {{ $question['question'] }}</b>@if($question['image_file_id'])<br><img class="question-image" src="/recruitment/images/{{ $question['image_file_id'] }}" alt="Question illustration">@endif @foreach($question['choices']??[] as $choice)<div>{{ $choice['id'] }}. {{ $choice['text'] }}@if($choice['image_file_id']??null)<br><img class="question-image" src="/recruitment/images/{{ $choice['image_file_id'] }}" alt="Choice illustration">@endif</div>@endforeach</td><td>{{ $attempt->answers[$question['id']]??'' }}</td></tr>@endforeach
+</tbody></table>
 @empty<p>No examination attempts.</p>@endforelse
-<p class="signature">Evaluator: ____________________ Date: ____________________</p><small>This report records responses. It does not assign a score or hiring outcome.</small>
-@endsection
+</body></html>

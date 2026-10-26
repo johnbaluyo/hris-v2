@@ -93,4 +93,12 @@ class OfficialBusinessController extends Controller
 
         return response()->json(RequestStatus::where('request_type', 'OB')->where('request_id', $officialBusiness->id)->latest('id')->paginate(10));
     }
+
+    public function print(Request $request, OfficialBusiness $officialBusiness): View
+    {
+        $record = $this->visibleRequests(OfficialBusiness::with(['employee.division', 'employee.position'])->whereKey($officialBusiness->id), $request, 'OB')->firstOrFail();
+        $status = RequestStatus::where('request_type', 'OB')->where('request_id', $record->id)->latest('id')->first();
+
+        return view('hris.request-print', ['kind' => 'ob', 'record' => $record, 'status' => $status]);
+    }
 }

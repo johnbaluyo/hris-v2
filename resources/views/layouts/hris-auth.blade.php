@@ -17,16 +17,17 @@
     </script>@vite(['resources/css/hris.css', 'resources/js/hris.js'])
 </head>
 
-<body>
-    <main class="container py-4">
-        <div class="d-flex justify-content-end"><x-theme-toggle /></div>
-        <div class="auth-card">
-            <div class="text-center mb-4"><a href="{{ route('home') }}" class="h3 text-decoration-none fw-bold">HRIS</a>
-                <p class="text-body-secondary small mt-2">Human Resource Information System</p>
-            </div>
-            <div class="card">
-                <div class="card-body p-4">
-                    <h1 class="h4 mb-3">@yield('title')</h1>
+<body class="auth-page" style="--auth-background: url('{{ asset('images/ssi-background.png') }}')">
+    <main class="container py-4 auth-page-shell">
+        <div class="auth-theme-toggle"><x-theme-toggle /></div>
+        <div class="auth-card legacy-auth-card">
+            <section class="auth-brand-panel" aria-label="Philippine Statistical Research and Training Institute">
+                <img src="{{ asset('images/psrti-logo.png') }}" alt="PSRTI logo" class="auth-brand-logo">
+                <p>Human Resource<br>Information System</p>
+            </section>
+            <section class="auth-form-panel">
+                    <img src="{{ asset('images/psrti-logo.png') }}" alt="" class="auth-mobile-logo" aria-hidden="true">
+                    <h1 class="h3 mb-4">@yield('title')</h1>
                     @if ($errors->any())
                         <div class="alert alert-danger" role="alert" data-flash-message="{{ $errors->first() }}" data-flash-error="true">{{ $errors->first() }}</div>
                         @endif @if (session('status'))
@@ -34,9 +35,9 @@
                                 {{ session('status') === 'verification-link-sent' ? 'Verification email sent.' : session('status') }}
                             </div>
                         @endif @yield('content')
-                </div>
-            </div>
+            </section>
         </div>
+        <p class="auth-version">PSRTI HRIS</p>
     </main>@stack('scripts')
 </body>
 

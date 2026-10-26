@@ -8,7 +8,7 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>Effective date</th>
+                    <th class="table-temporal">Effective date</th>
                     <th>Position</th>
                     <th>Previous position</th>
                     <th>Division</th>
@@ -19,7 +19,7 @@
                 @forelse ($records as $record)
                     @php($row = $record->after ?? [])
                     <tr>
-                        <td>{{ $row['effective_date'] ?? '—' }}</td>
+                        <td class="table-temporal">{{ $row['effective_date'] ?? '—' }}</td>
                         <td>{{ $row['position_title'] ?? '—' }}</td>
                         <td>{{ $row['previous_position_title'] ?? '—' }}</td>
                         <td>{{ $row['division'] ?? '—' }}</td>

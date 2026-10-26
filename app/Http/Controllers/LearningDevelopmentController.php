@@ -136,7 +136,7 @@ class LearningDevelopmentController extends Controller
         $employee = $position->employee()->where('is_archived', false)->first();
         $requirements = TrainingRequirement::where('position_id', $position->id)->whereNull('archived_at')->orderBy('category')->orderBy('title')->get();
         $training = $employee instanceof User
-            ? PdsEntry::where('user_id', $employee->id)->where('section', 'learning')->latest('id')->get()
+            ? PdsEntry::where('user_id', $employee->id)->whereIn('section', ['learning', 'learning_development'])->latest('id')->get()
             : collect();
         $links = TrainingRequirementLink::with('training')->whereIn('pds_entry_id', $training->pluck('id'))->get()->keyBy('pds_entry_id');
         $fulfilled = [];
@@ -161,10 +161,15 @@ class LearningDevelopmentController extends Controller
             'unfulfilled' => $unfulfilled, 'uncategorized' => $uncategorized]);
     }
 
+    public function printMatrix(Request $request, Position $position): View
+    {
+        return view('hris.learning-matrix-print', $this->matrix($request, $position)->getData(true));
+    }
+
     public function linkTraining(Request $request, TrainingRequirement $requirement, PdsEntry $training): JsonResponse
     {
         abort_unless($request->user()->hasAbility('lnd.manage'), 403);
-        abort_unless($training->section === 'learning', 422, 'Only learning and development entries can fulfill a requirement.');
+        abort_unless(in_array($training->section, ['learning', 'learning_development'], true), 422, 'Only learning and development entries can fulfill a requirement.');
         $employeePosition = User::whereKey($training->user_id)->value('position_id');
         abort_unless((int) $employeePosition === $requirement->position_id, 422, 'The training employee is not the incumbent of this requirement position.');
         TrainingRequirementLink::updateOrCreate(['pds_entry_id' => $training->id], ['training_requirement_id' => $requirement->id, 'actor_id' => $request->user()->id]);

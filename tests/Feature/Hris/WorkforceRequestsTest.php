@@ -57,6 +57,7 @@ class WorkforceRequestsTest extends TestCase
         $this->assertSame('Approved', RequestStatus::latest('id')->first()->status);
         $this->actingAs($staff)->getJson('/calendar/feed?calendar=personal&from=2026-10-01&to=2026-10-31')->assertOk()
             ->assertJsonFragment(['title' => 'Official business: Regional office']);
+        $this->actingAs($staff)->get('/official-business/'.$record->id.'/print')->assertOk()->assertSee('FAD Form No. 01')->assertSee('CERTIFICATE OF APPEARANCE');
         $this->postJson('/official-business/'.$record->id.'/transition', ['action' => 'approve_dc'])->assertUnprocessable();
     }
 
@@ -103,6 +104,7 @@ class WorkforceRequestsTest extends TestCase
         $this->actingAs($chief)->postJson('/overtime/'.$id.'/transition', ['action' => 'approve_dc'])->assertOk();
         $this->assertSame('For ED Approval', RequestStatus::latest('id')->first()->status);
         $this->actingAs($ed)->postJson('/overtime/'.$id.'/transition', ['action' => 'approve_ed'])->assertOk();
+        $this->actingAs($staff)->get('/overtime/'.$id.'/print')->assertOk()->assertSee('REQUEST FOR AUTHORITY TO')->assertSee('DETAILS OF APPLICATION');
         $this->assertDatabaseCount('coc_entries', 0);
     }
 
@@ -115,6 +117,7 @@ class WorkforceRequestsTest extends TestCase
         $response = $this->actingAs($staff)->postJson('/cto', ['dates' => [['date' => '2026-10-26', 'portion' => 'AM']]])->assertCreated();
         $id = $response->json('id');
         $this->assertDatabaseHas('cto_requests', ['id' => $id, 'total_minutes' => 240, 'balance_snapshot_minutes' => 600]);
+        $this->get('/cto/'.$id.'/print')->assertOk()->assertSee('Compensatory Time - Off (CTO) Form')->assertSee('EARNED');
         $this->actingAs($hr)->postJson('/cto/'.$id.'/transition', ['action' => 'certify'])->assertOk();
         $this->actingAs($chief)->postJson('/cto/'.$id.'/transition', ['action' => 'approve_dc'])->assertOk();
         $this->actingAs($ed)->postJson('/cto/'.$id.'/transition', ['action' => 'approve_ed'])->assertOk();
@@ -133,6 +136,7 @@ class WorkforceRequestsTest extends TestCase
             ['date' => '2026-10-26'], ['date' => '2026-10-27'],
         ]])->assertCreated();
         $id = $response->json('id');
+        $this->get('/leave/'.$id.'/print')->assertOk()->assertSee('APPLICATION FOR LEAVE')->assertSee('Civil Service Form No. 6');
         $this->actingAs($hr)->postJson('/leave/'.$id.'/transition', ['action' => 'certify'])->assertOk();
         $this->actingAs($chief)->postJson('/leave/'.$id.'/transition', ['action' => 'approve_dc'])->assertOk();
         $this->actingAs($ed)->postJson('/leave/'.$id.'/transition', ['action' => 'approve_ed', 'paid_days' => 1.5, 'unpaid_days' => .5])->assertOk();

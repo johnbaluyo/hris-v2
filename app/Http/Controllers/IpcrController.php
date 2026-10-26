@@ -169,10 +169,12 @@ class IpcrController extends Controller
     public function print(Request $request, Ipcr $ipcr, IpcrRatingCalculator $calculator): View
     {
         $this->authorizeRead($request->user(), $ipcr);
-        $ipcr->load(['employee', 'outputs.indicators.accomplishments']);
+        $ipcr->load(['employee.division', 'outputs.indicators.accomplishments']);
         $rating = $calculator->calculate($ipcr);
+        $supervisor = User::where('division_id', $ipcr->employee->division_id)->where('role', 'division_chief')->where('is_archived', false)->first();
+        $director = User::where('role', 'executive_director')->where('is_archived', false)->first();
 
-        return view('hris.ipcr-print', compact('ipcr', 'rating'));
+        return view('hris.ipcr-print', compact('ipcr', 'rating', 'supervisor', 'director'));
     }
 
     private function currentStatus(Ipcr $ipcr): ?string

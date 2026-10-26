@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="color-scheme" content="light dark">
+    <link rel="icon" href="{{ asset("images/psrti-logo.png") }}">
     <title>@yield('title', 'Employee portal') · {{ config('app.name', 'HRIS') }}</title>
     @include('partials.theme-init')
     @vite(['resources/css/hris.css', 'resources/js/hris.js'])
@@ -13,7 +14,7 @@
 <body>
 <a href="#main" class="visually-hidden-focusable position-absolute p-3 bg-body z-3">Skip to content</a>
 <aside class="offcanvas-lg offcanvas-start hris-sidebar" tabindex="-1" id="navigation" aria-labelledby="navigation-title">
-    <div class="offcanvas-header"><a id="navigation-title" href="{{ route('dashboard') }}" class="hris-brand">HR<span>IS</span><small>People & workplace</small></a><button class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#navigation" aria-label="Close navigation"></button></div>
+    <div class="offcanvas-header"><a id="navigation-title" href="{{ route('dashboard') }}" class="hris-brand"><img src="{{ asset('images/psrti-logo.png') }}" alt="PSRTI"><span class="hris-brand-copy">HRIS<small>People & workplace</small></span></a><button class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#navigation" aria-label="Close navigation"></button></div>
     <div class="offcanvas-body d-flex flex-column">
         <div class="nav-section">WORKSPACE</div>
         <nav class="nav flex-column gap-1" aria-label="Main navigation">
@@ -24,7 +25,7 @@
             <a class="nav-link {{ request()->is('profile*') ? 'active' : '' }}" href="{{ route('pds.index') }}"><span><i class="fa-solid fa-address-card" aria-hidden="true"></i></span> My profile & PDS</a>
             <a class="nav-link {{ request()->is('calendar*') ? 'active' : '' }}" href="{{ route('calendar') }}"><span><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span> Calendars</a>
             <a class="nav-link {{ request()->is('attendance*') ? 'active' : '' }}" href="{{ route('attendance') }}"><span><i class="fa-solid fa-clock" aria-hidden="true"></i></span> Attendance</a>
-            <a class="nav-link {{ request()->routeIs('attendance.review') ? 'active' : '' }}" href="{{ route('attendance.review') }}"><span><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span> Monthly attendance review</a>
+            @if(auth()->user()->role !== 'staff')<a class="nav-link {{ request()->routeIs('attendance.review') ? 'active' : '' }}" href="{{ route('attendance.review') }}"><span><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span> Monthly attendance review</a>@endif
             <div class="nav-section mt-4">REQUESTS & CREDITS</div>
             <a class="nav-link {{ request()->is('official-business*') ? 'active' : '' }}" href="{{ route('official-business') }}"><span><i class="fa-solid fa-briefcase" aria-hidden="true"></i></span> Official business</a>
             <a class="nav-link {{ request()->is('overtime*') ? 'active' : '' }}" href="{{ route('overtime') }}"><span><i class="fa-solid fa-business-time" aria-hidden="true"></i></span> Overtime & COC</a>

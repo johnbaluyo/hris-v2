@@ -129,6 +129,7 @@ class EmploymentCertificateController extends Controller
     public function print(Request $request, EmploymentCertificate $certificate): View
     {
         abort_unless($certificate->user_id === $request->user()->id || $request->user()->hasAbility('certificates.manage'), 403);
+        $certificate->loadMissing(['employee', 'files']);
 
         return view('hris.certificate-print', compact('certificate'));
     }

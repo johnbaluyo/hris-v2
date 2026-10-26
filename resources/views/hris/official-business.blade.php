@@ -12,6 +12,7 @@
      ['key' => 'current_status', 'label' => 'Status'],
  ]" :actions="[
      ['name' => 'details', 'label' => 'Details'],
+     ['name' => 'print', 'label' => 'Print'],
      ['name' => 'review', 'label' => 'Review / cancel'],
      ['name' => 'evidence', 'label' => 'Evidence', 'editable' => true],
  ]">
@@ -93,7 +94,8 @@
      row
     }
    }) => {
-    if (kind === 'details') HRIS.showDetails('Official business', row);
+    if (kind === 'print') window.open(`/official-business/${row.id}/print`, '_blank', 'noopener');
+    else if (kind === 'details') HRIS.showDetails('Official business', row);
     else if (kind === 'review') {
      HRIS.fillForm(action, {});
      action.dataset.endpoint = `/official-business/${row.id}/transition`;

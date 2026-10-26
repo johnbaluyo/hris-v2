@@ -110,4 +110,16 @@ class CtoController extends Controller
 
         return response()->json(['message' => 'COC adjustment recorded.', 'id' => $entry->id], 201);
     }
+
+    public function print(Request $request, CtoRequest $cto, CocLedger $ledger): View
+    {
+        $record = $this->visibleRequests(CtoRequest::with(['employee.division', 'employee.position', 'dates'])->whereKey($cto->id), $request, 'CTO')->firstOrFail();
+
+        return view('hris.request-print', [
+            'kind' => 'cto',
+            'record' => $record,
+            'status' => $record->current_status,
+            'balance' => $ledger->balance($record->user_id),
+        ]);
+    }
 }

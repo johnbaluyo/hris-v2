@@ -1,8 +1,9 @@
-@extends('layouts.hris')
-@section('title', 'Individual development plan')
-@section('actions')<button class="btn btn-primary" data-print>Print</button>@endsection
-@section('content')
-<h2 class="h5">{{ $idp->employee->name }} - {{ $idp->plan_year }}</h2><p>{{ $idp->employee->position?->title }} / {{ $idp->employee->division?->name }}</p>
-<table class="table table-bordered"><thead><tr><th>Position requirement</th><th>Proposal</th><th>Training / intervention</th></tr></thead><tbody>@foreach($idp->items as $item)<tr><td>{{ $item->requirement?->title ?? 'Employee-proposed' }}</td><td>{{ $item->proposal }}</td><td>{{ $item->title }}</td></tr>@endforeach</tbody></table>
-<p>Status: {{ $idp->approved_at ? 'Supervisor approved '.$idp->approved_at->timezone('Asia/Manila')->format('M d, Y') : ($idp->submitted_at ? 'Submitted for supervisor approval' : 'Draft') }}</p>
-@endsection
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Individual Development Plan</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:15px}.header{text-align:center}table{width:100%;border-collapse:collapse}td,th{border:1px solid #000;padding:7px;vertical-align:top}.center{text-align:center}.signature td{height:85px;vertical-align:bottom}.no-print{position:fixed;right:12px;top:12px}@media print{.no-print{display:none}body{margin:0}@page{size:landscape;margin:8mm}}</style></head><body>
+<button class="no-print" onclick="window.print()">Print</button>
+<div class="header"><div><img src="{{ asset('images/header.jpg') }}" alt="IDP Banner" style="width:70%;vertical-align:middle"> &nbsp;&nbsp;&nbsp;<b>FAD-LDP-001-01</b></div><h4>INDIVIDUAL DEVELOPMENT PLAN</h4></div>
+<table><tr><td><b>Name of Employee:</b> {{ strtoupper($idp->employee->name) }}</td><td><b>Position:</b> {{ $idp->employee->position?->title }}</td></tr><tr><td><b>Division:</b> {{ $idp->employee->division?->name }}</td><td><b>Period:</b> {{ implode(', ', $idp->coverage_years ?: [$idp->plan_year]) }}</td></tr></table>
+<p><b>Purpose:</b> {{ [1=>'To meet the competencies of current position',2=>'To increase the level of competencies of current position',3=>'To meet the competencies of higher position',4=>'Others'][$idp->purpose] ?? $idp->other_purpose }}</p>
+<table><thead><tr><th>Development Needs / Training Value</th><th>Development Intervention / Training Title</th><th>Target Completion</th></tr></thead><tbody>@foreach($idp->items as $item)<tr><td><strong>{{ $item->requirement?->title ?? 'Employee-proposed' }}</strong><br>{{ $item->proposal }}</td><td>{{ $item->title }}</td><td>{{ $idp->plan_year }}</td></tr>@endforeach</tbody></table>
+<br><table class="signature"><tr><td class="center"><b>{{ $idp->submitted_at ? 'signed' : '' }}</b><br><br>{{ strtoupper($idp->employee->name) }}<br>Employee</td><td class="center"><b>{{ $idp->approved_at ? 'signed' : '' }}</b><br><br>____________________________<br>Division Chief / Supervisor</td><td class="center"><br><br>____________________________<br>HRDC Chairperson</td></tr></table>
+<div style="text-align:right;margin-top:10px"><img src="{{ asset('images/iso.png') }}" alt="ISO Certification" style="width:8%"></div>
+</body></html>

@@ -151,7 +151,10 @@ class RecognitionController extends Controller
             $attendance = DailyAttendance::where('user_id', $user->id)->whereBetween('attendance_date', [$data['from'], $data['to']])->get();
             $leaveDays = LeaveDate::whereBetween('leave_date', [$data['from'], $data['to']])->whereHas('request', fn ($q) => $q->where('user_id', $user->id)
                 ->whereIn('leave_type_id', $data['leave_type_ids'])->whereRaw("(select status from request_statuses where request_type = 'LEAVE' and request_id = leave_requests.id order by id desc limit 1) = 'Approved'"))->sum('day_fraction');
+            $leaveByType = fn (array $types) => (float) LeaveDate::whereBetween('leave_date', [$data['from'], $data['to']])->whereHas('request', fn ($q) => $q->where('user_id', $user->id)
+                ->whereIn('leave_type_id', $types)->whereRaw("(select status from request_statuses where request_type = 'LEAVE' and request_id = leave_requests.id order by id desc limit 1) = 'Approved'"))->sum('day_fraction');
             $rows[] = ['employee' => EmployeeSnapshot::for($user), 'leave_days' => (float) $leaveDays,
+                'vl' => $leaveByType([1, 3]), 'sl' => $leaveByType([2]), 'other_leaves' => $leaveByType([4, 5]),
                 'late_minutes' => (int) $attendance->sum('late_minutes'), 'undertime_minutes' => (int) $attendance->sum('undertime_minutes'),
                 'penalty_minutes' => (int) $attendance->sum('late_minutes') + (int) $attendance->sum('undertime_minutes'),
                 'review_days' => $attendance->where('needs_review', true)->count(), 'recorded_days' => $attendance->count()];

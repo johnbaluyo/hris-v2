@@ -129,18 +129,39 @@ class PayrollController extends Controller
         $this->authorizePayroll($request);
         abort_unless($payroll->status === 'Finalized', 409, 'Finalize payroll before exporting.');
 
-        return response()->streamDownload(function () use ($payroll) {
-            $out = fopen('php://output', 'w');
-            if ($out === false) {
-                return;
-            }
-            fputcsv($out, ['Employee', 'Basic salary', 'PERA', 'RATA', 'Other compensation', 'Deductions', 'Net']);
-            $payroll->lines()->orderBy('id')->get()->each(function (PayrollLine $line) use ($out) {
-                $snapshot = $line->employee_snapshot;
-                fputcsv($out, [$snapshot['name'] ?? '', $line->basic_salary, $line->pera, $line->rata, $line->other_compensation, $line->total_deductions, $line->net]);
-            });
-            fclose($out);
-        }, 'payroll-'.$payroll->payroll_number.'.csv', ['Content-Type' => 'text/csv']);
+        $lines = $payroll->lines()->orderBy('id')->get()->sortBy(fn (PayrollLine $line) => sprintf(
+            '%s|%03d|%010d',
+            $line->employee_snapshot['division'] ?? '',
+            999 - (int) ($line->employee_snapshot['salary_grade'] ?? 0),
+            $line->id,
+        ))->values();
+
+        return response()->streamDownload(function () use ($payroll, $lines) {
+            echo view('hris.payroll-export', compact('payroll', 'lines'))->render();
+        }, 'payroll-'.$payroll->payroll_number.'.xls', ['Content-Type' => 'application/vnd.ms-excel; charset=UTF-8']);
+    }
+
+    public function payslips(Request $request, Payroll $payroll): View
+    {
+        $this->authorizePayroll($request);
+        abort_unless($payroll->status === 'Finalized', 409, 'Finalize payroll before printing payslips.');
+        $lines = $payroll->lines()->orderBy('id')->get();
+
+        return view('hris.payroll-payslips', compact('payroll', 'lines'));
+    }
+
+    public function voucher(Request $request, Payroll $payroll, PayrollLine $line): StreamedResponse
+    {
+        $this->authorizePayroll($request);
+        abort_unless($line->payroll_id === $payroll->id, 404);
+        abort_unless($payroll->status === 'Finalized', 409, 'Finalize payroll before exporting a voucher.');
+        abort_unless($payroll->type === 'CSW', 422, 'Disbursement vouchers are available for CSW payrolls only.');
+
+        $name = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($line->employee_snapshot['name'] ?? 'employee'));
+
+        return response()->streamDownload(function () use ($payroll, $line) {
+            echo view('hris.payroll-voucher', compact('payroll', 'line'))->render();
+        }, 'DV_'.$name.'_'.now()->format('Y-m-d').'.xls', ['Content-Type' => 'application/vnd.ms-excel; charset=UTF-8']);
     }
 
     public function saveLoanCategory(Request $request): JsonResponse

@@ -139,12 +139,32 @@ class AttendanceTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($hr)->postJson('/attendance/'.$user->id.'/override', ['attendance_date' => '2026-10-20', 'time_in' => '09:30', 'time_out' => '18:00', 'workweek' => 5, 'reason' => 'Verified device repair'])->assertOk();
         $this->getJson('/attendance/'.$user->id.'/data?from=2026-10-01&to=2026-10-31')->assertJsonPath('summary.late_minutes', 30);
-        $this->get('/attendance/'.$user->id.'/report?from=2026-10-01&to=2026-10-31')->assertOk()->assertSee('office-v1');
+        $this->get('/attendance/'.$user->id.'/report?from=2026-10-01&to=2026-10-31')
+            ->assertOk()
+            ->assertSee('PHILIPPINE STATISTICAL RESEARCH AND TRAINING INSTITUTE')
+            ->assertSee('CS Form No. 48')
+            ->assertSee('Daily Time Record Statistics')
+            ->assertSee('Employee Signature')
+            ->assertSee('October 01, 2026')
+            ->assertSee('October 31, 2026')
+            ->assertSee('office-v1');
         $csv = $this->get('/attendance/'.$user->id.'/report?from=2026-10-01&to=2026-10-31&format=csv')->assertOk()->streamedContent();
         $this->assertStringContainsString('office-v1', $csv);
         $this->assertStringContainsString('2026-10-20', $csv);
+        $this->get('/attendance/'.$user->id.'/report?from=2026-10-01&to=2026-10-31&format=xls')
+            ->assertOk()->assertDownload('DTR-'.$user->id.'-2026-10-01.xls');
         $this->postJson('/attendance/'.$user->id.'/remarks', ['coverage' => '2026-10-15', 'fc_absence' => 0, 'remarks' => 'Reviewed'])->assertOk();
         $this->assertDatabaseHas('attendance_remarks', ['user_id' => $user->id, 'coverage' => '2026-10-01', 'fc_absence' => 0]);
+    }
+
+    public function test_printing_uses_one_complete_selected_month_and_the_attendance_page_prompts_for_it(): void
+    {
+        $employee = User::factory()->create();
+        $this->actingAs($employee)->get('/attendance')->assertOk()
+            ->assertSee('Print monthly DTR')->assertSee('type="month"', false);
+
+        $this->get('/attendance/'.$employee->id.'/report?month=2026-02')->assertOk()
+            ->assertSee('February 01, 2026')->assertSee('February 28, 2026')->assertDontSee('March 01, 2026');
     }
 
     public function test_changing_an_attendance_id_does_not_reassign_historical_punches(): void

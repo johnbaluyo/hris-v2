@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Attendance\AttendanceService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -60,6 +61,27 @@ class IntegrationReviewTest extends TestCase
         $this->assertArrayNotHasKey('birthday', $data[0]);
         $this->assertArrayNotHasKey('email', $data[0]);
         $this->get('/attendance/review/export?month=2026-10')->assertForbidden();
+        $this->get('/attendance/'.$employee->id)->assertOk()->assertDontSee('Add correction');
+        $this->postJson('/attendance/'.$employee->id.'/override', [])->assertForbidden();
+        DB::table('ability_grants')->insert(['user_id' => $chief->id, 'ability' => 'attendance.correct']);
+        $this->postJson('/attendance/'.$employee->id.'/override', [])->assertForbidden();
+        $this->get('/attendance/review')->assertOk()
+            ->assertSee('value="'.$division->id.'" selected', false)
+            ->assertSee('id="review-division" class="form-select" data-table-filter disabled', false);
+
+        $hr = User::factory()->create(['role' => 'hr']);
+        $this->actingAs($hr)->get('/attendance/review/export?month=2026-10')
+            ->assertOk()->assertDownload('month_of_October-DTR.xls');
+        $this->post('/attendance/review/bulk-print', ['month' => '2026-10', 'employee_ids' => [$employee->id, $other->id]])
+            ->assertOk()->assertSee('Visible Example')->assertSee('Private Other Division')->assertSee('October 31, 2026');
+    }
+
+    public function test_staff_cannot_open_monthly_attendance_review_or_its_data(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $this->actingAs($staff)->get('/dashboard')->assertOk()->assertDontSee('Monthly attendance review');
+        $this->get('/attendance/review')->assertForbidden();
+        $this->getJson('/attendance/review/data?month=2026-10')->assertForbidden();
     }
 
     public function test_system_administration_does_not_implicitly_grant_confidential_hr_access(): void

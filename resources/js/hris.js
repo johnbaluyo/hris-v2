@@ -40,6 +40,14 @@ function display(value) {
     return String(value);
 }
 
+function isTemporalColumn(column, value) {
+    const key = String(column.key || '');
+    const text = value == null ? '' : String(value);
+    return /(^|[._])(date|dates|time|timestamp|filed|created|updated|starts|ends|period|coverage)(_|$)/i.test(key)
+        || /^\d{4}-\d{2}-\d{2}(?:[T\s]|$)/.test(text)
+        || /^\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?$/i.test(text);
+}
+
 export class AsyncTable {
     constructor(element) {
         this.el = element;
@@ -97,7 +105,9 @@ export class AsyncTable {
                 const tr = document.createElement('tr');
                 this.columns.forEach(column => {
                     const cell = document.createElement('td');
-                    const text = display(column.key.split('.').reduce((value, key) => value?.[key], row));
+                    const value = column.key.split('.').reduce((current, key) => current?.[key], row);
+                    const text = display(value);
+                    if (isTemporalColumn(column, value)) cell.classList.add('table-temporal');
                     if (column.avatar && row.avatar_url) {
                         const wrapper = document.createElement('div'); wrapper.className = 'd-flex align-items-center gap-2';
                         const image = document.createElement('img'); image.src = row.avatar_url; image.dataset.avatar = row.avatar_url;

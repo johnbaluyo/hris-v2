@@ -28,6 +28,6 @@ class EmployeePolicy
 
     public function correctAttendance(User $actor, User $employee): bool
     {
-        return $actor->hasAbility('attendance.correct');
+        return $actor->role !== 'division_chief' && $actor->hasAbility('attendance.correct');
     }
 }

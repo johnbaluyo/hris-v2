@@ -1,11 +1,20 @@
-@extends('layouts.report')
-@section('title', 'Employment certificate record')
-@section('content')
-<h1>Employment certificate record</h1><p>Status: {{ $certificate->status }} · {{ ucfirst($certificate->type) }}</p><p>{{ $certificate->snapshot['name'] }}<br>{{ $certificate->snapshot['position'] }}<br>{{ $certificate->snapshot['division'] }}</p>
-<p>Employment: {{ $certificate->snapshot['hired_on'] ?? 'Not recorded' }}@if($certificate->type === 'manual') through {{ $certificate->snapshot['terminated_on'] }}@endif</p>
-<p>Purpose: {{ $certificate->purpose }}</p>
-@if($certificate->type === 'current' && $certificate->compensation)<h2>Annual compensation amounts</h2><table><thead><tr><th>Component</th><th>Amount</th></tr></thead><tbody>@foreach($certificate->compensation as $field=>$cents)<tr><td>{{ ucwords(str_replace('_',' ',$field)) }}</td><td>{{ number_format($cents/100,2) }}</td></tr>@endforeach<tr><th>Annual basic pay + PERA</th><td>{{ number_format($certificate->annual_total_cents/100,2) }}</td></tr><tr><th>Benefits</th><td>{{ number_format($certificate->benefit_total_cents/100,2) }}</td></tr><tr><th>Grand total</th><td>{{ number_format($certificate->grand_total_cents/100,2) }}</td></tr></tbody></table>@endif
-@if($certificate->issued_at)<p>Recorded issuer: {{ $certificate->snapshot['signer']['name'] }} · {{ $certificate->issued_at->format('d M Y g:i A') }} Manila</p>@endif
-@foreach($certificate->files as $file)<p><a href="/files/{{ $file->private_file_id }}">Download completed certificate</a></p>@endforeach
-<p><small>This is a record summary. The completed PDF is the issued document. Official certificate wording, branding and signature assets require HR approval.</small></p>
-@endsection
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Certificate of Employment</title><style>body{font-family:Arial,sans-serif;margin:40px}.header{text-align:center;margin-bottom:40px}.content{position:relative;margin-top:-30px}.amount{position:relative;margin-left:70px;font-size:16px}.amount span{position:absolute;right:150px}.no-print{position:fixed;top:10px;right:10px}.signature{position:fixed;bottom:120px;right:40px;text-align:center;width:220px}.footer{position:fixed;bottom:0;left:15%;width:70%;text-align:center}.qms{position:fixed;bottom:20px;right:40px}.verification{position:fixed;bottom:20px;left:40px;font-size:9px;width:180px;overflow-wrap:anywhere}@media print{.no-print{display:none}@page{margin:10mm}}</style></head><body>
+@php
+ $snapshot=$certificate->snapshot;$name=$snapshot['name']??'';$comp=$certificate->compensation??[];
+ $money=static fn($key)=>number_format(($comp[$key]??0)/100,2);
+ $female=in_array(strtolower((string)($certificate->employee?->sex??'')),['f','female'],true);$prefix=$female?'Ms.':'Mr.';$subject=$female?'She':'He';$possessive=$female?'Her':'His';
+@endphp
+<button class="no-print" onclick="window.print()">Print</button>
+<div class="content"><img src="{{ asset('images/bagongpilipinas_letterhead.png') }}" alt="header" style="width:105%;height:auto;display:block"><p style="text-align:right">{{ ($certificate->issued_at??now('Asia/Manila'))->format('F d, Y') }}</p><div class="header"><h1>Certificate of Employment</h1></div>
+<p style="text-indent:40px;text-align:justify;line-height:1.5;font-size:17px">This is to certify that <strong>{{ $prefix }} {{ $name }}</strong> {{ $certificate->type==='manual'?'formerly held':'currently holds' }} the position of <strong>{{ $snapshot['position'] }}{{ isset($snapshot['salary_grade'])?' (SG '.$snapshot['salary_grade'].')':'' }}</strong>. {{ $subject }} has been {{ strtolower((string)($snapshot['employee_type']??'permanent'))==='permanent'?'a permanent employee':'an employee' }} of this Agency since {{ !empty($snapshot['hired_on'])?\Carbon\CarbonImmutable::parse($snapshot['hired_on'])->format('F d, Y'):'—' }}@if($certificate->type==='manual' && !empty($snapshot['terminated_on'])) until {{ \Carbon\CarbonImmutable::parse($snapshot['terminated_on'])->format('F d, Y') }}@endif.</p>
+@if($certificate->type==='current' && $certificate->compensation)
+<p style="text-indent:50px;text-align:justify;line-height:1.5;font-size:16px">{{ $possessive }} annual salary and allowance are the following:</p>
+<div class="amount">Basic Pay <span>P {{ $money('basic_pay') }}</span></div><div class="amount">Personal Economic Relief Allowance <span>{{ $money('pera') }}</span></div><div class="amount">TOTAL <span>P {{ number_format($certificate->annual_total_cents/100,2) }}</span></div>
+<p style="text-indent:50px;font-size:16px">Other benefits are the following:</p>
+@foreach(['mid_year'=>'Mid-year Bonus','year_end'=>'Year-end Bonus','cna'=>'Collective Negotiation Agreement Incentive','sri'=>'Service Recognition Incentive','clothing'=>'Clothing Allowance','medical'=>'Medical Allowance','pei'=>'Performance Enhancement Incentive','cash_gift'=>'Cash Gift'] as $key=>$label)<div class="amount">{{ $label }} <span>{{ $money($key) }}</span></div>@endforeach
+<div class="amount">TOTAL <span>P {{ number_format($certificate->benefit_total_cents/100,2) }}</span></div><p class="amount">GRAND TOTAL <strong><span>P {{ number_format($certificate->grand_total_cents/100,2) }}</span></strong></p>
+@endif
+<p style="text-indent:40px;text-align:justify;line-height:1.5;font-size:17px;margin-top:20px">This certification is being issued upon the request of <strong>{{ $prefix }} {{ $name }}</strong> for {{ $certificate->purpose ?: 'whatever legal purpose it may serve '.$possessive.' best' }}.</p></div>
+<div class="signature"><br><br><div style="font-weight:700;font-size:15px">{{ $snapshot['signer']['name']??'' }}</div><div style="font-size:13px">{{ $snapshot['signer']['position']??'' }}</div></div>
+<div class="verification">Verify: {{ $snapshot['verification_url']??'' }}</div><div class="footer"><img src="{{ asset('images/footer.png') }}" alt="footer" style="width:100%;height:80px"></div><div class="qms"><img src="{{ asset('images/QMS.png') }}" alt="QMS" style="width:60px;height:70px"></div>
+</body></html>

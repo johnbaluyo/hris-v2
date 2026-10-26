@@ -219,4 +219,14 @@ class LeaveController extends Controller
 
         return response()->json(['message' => 'Leave-credit adjustment recorded.', 'id' => $entry->id], 201);
     }
+
+    public function print(Request $request, LeaveRequest $leave): View
+    {
+        $record = $this->visibleRequests(LeaveRequest::with(['employee.division', 'employee.position', 'type', 'dates', 'statuses.actor'])->whereKey($leave->id), $request, 'LEAVE')->firstOrFail();
+        $balances = LeaveLedgerEntry::where('user_id', $record->user_id)
+            ->selectRaw('leave_type_id, SUM(CASE WHEN direction = ? THEN days ELSE -days END) AS balance', ['IN'])
+            ->groupBy('leave_type_id')->pluck('balance', 'leave_type_id');
+
+        return view('hris.request-print', ['kind' => 'leave', 'record' => $record, 'status' => $record->current_status, 'balances' => $balances]);
+    }
 }

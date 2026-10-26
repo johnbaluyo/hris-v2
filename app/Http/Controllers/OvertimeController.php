@@ -77,4 +77,11 @@ class OvertimeController extends Controller
 
         return response()->json(['message' => 'Request is now '.$status->status.'.']);
     }
+
+    public function print(Request $request, OvertimeRequest $overtime): View
+    {
+        $record = $this->visibleRequests(OvertimeRequest::with(['employee.division', 'employee.position', 'dates'])->whereKey($overtime->id), $request, 'OT')->firstOrFail();
+
+        return view('hris.request-print', ['kind' => 'overtime', 'record' => $record, 'status' => $record->current_status]);
+    }
 }

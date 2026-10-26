@@ -1,7 +1,7 @@
-@extends('layouts.hris')
-@section('title', 'Division learning plan')
-@section('actions')<button class="btn btn-primary" data-print>Print</button>@endsection
-@section('content')
-<h2 class="h5">{{ $plan->division->name }} - {{ $plan->plan_year }}</h2>
-<table class="table table-bordered"><thead><tr><th>Employee</th><th>Proposal</th><th>Training / intervention</th><th>Free</th><th class="text-end">Budget</th></tr></thead><tbody>@foreach($plan->lines as $line)<tr><td>{{ $line->snapshot['employee'] ?? '-' }}</td><td>{{ $line->snapshot['proposal'] ?? '-' }}</td><td>{{ $line->snapshot['title'] ?? '-' }}</td><td>{{ $line->is_free ? 'Yes' : 'No' }}</td><td class="text-end">{{ $line->budget }}</td></tr>@endforeach</tbody><tfoot><tr><th colspan="4">Total ({{ $plan->staff_count }} staff)</th><th class="text-end">{{ $plan->total_budget }}</th></tr></tfoot></table>
-@endsection
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Divisional Learning and Development Plan - {{ $plan->plan_year }}</title><style>body{font-family:Arial,sans-serif;margin:20px}.header{text-align:center;margin-bottom:30px}.header h2,.header h3{margin:5px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #000;padding:8px;vertical-align:top}th{background:#f2f2f2;text-align:center}.text-right{text-align:right}.print-button{position:fixed;top:20px;right:20px;padding:10px 20px}@media print{.print-button{display:none}body{margin:0}@page{size:landscape}}</style></head><body>
+<button class="print-button" onclick="window.print()">Print Report</button>
+<div class="header"><h2>PHILIPPINE STATISTICAL RESEARCH AND TRAINING INSTITUTE</h2><h2>LEARNING AND DEVELOPMENT PLAN</h2><h3>{{ strtoupper($plan->division->name ?: 'DIVISION') }}</h3><h3>FY. {{ $plan->plan_year }}</h3></div>
+<table><thead><tr><th width="20%">Staff Name</th><th width="40%">Training Value</th><th width="25%">Training Title</th><th width="15%">Budget (₱)</th></tr></thead><tbody>
+@foreach($plan->lines as $line)<tr><td>{{ $line->snapshot['employee'] ?? '-' }}</td><td>{{ $line->snapshot['proposal'] ?? '-' }}</td><td>{{ $line->snapshot['title'] ?? '-' }}</td><td class="text-right">{{ $line->is_free ? 'FREE' : number_format((float)$line->budget,2) }}</td></tr>@endforeach
+<tr><td colspan="3" class="text-right"><strong>TOTAL:</strong></td><td class="text-right"><strong>{{ number_format((float)$plan->total_budget,2) }}</strong></td></tr>
+</tbody></table></body></html>

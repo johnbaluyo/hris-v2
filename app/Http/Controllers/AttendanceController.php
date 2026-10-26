@@ -4,8 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRemark;
 use App\Models\AttendanceRevision;
+use App\Models\CtoRequest;
 use App\Models\DailyAttendance;
+use App\Models\Holiday;
+use App\Models\LeaveRequest;
+use App\Models\OfficialBusiness;
 use App\Models\RawPunch;
+use App\Models\RequestStatus;
 use App\Models\User;
 use App\Services\Attendance\AttendanceService;
 use App\Services\Attendance\OfficePunchAccess;
@@ -158,7 +163,16 @@ class AttendanceController extends Controller
     {
         Gate::authorize('attendance', $employee);
         abort_unless($request->user()->id === $employee->id || $request->user()->hasAbility('attendance.export'), 403);
-        [$from, $to] = $this->range($request);
+        $data = $request->validate([
+            'month' => 'nullable|date_format:Y-m',
+            'from' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d',
+            'format' => 'nullable|in:csv,xls',
+        ]);
+        $month = CarbonImmutable::createFromFormat('!Y-m', $data['month'] ?? (isset($data['from']) ? CarbonImmutable::parse($data['from'])->format('Y-m') : today('Asia/Manila')->format('Y-m')));
+        abort_unless($month, 422, 'Choose a valid month and year.');
+        $from = $month->startOfMonth()->toDateString();
+        $to = $month->endOfMonth()->toDateString();
         $rows = DailyAttendance::where('user_id', $employee->id)->whereBetween('attendance_date', [$from, $to])->orderBy('attendance_date')->get();
         $remarks = AttendanceRemark::where('user_id', $employee->id)->whereBetween('coverage', [CarbonImmutable::parse($from)->startOfMonth()->toDateString(), $to])->get();
         if ($request->input('format') === 'csv') {
@@ -176,6 +190,72 @@ class AttendanceController extends Controller
             }, 'attendance-'.$employee->id.'-'.$from.'.csv', ['Cache-Control' => 'private, no-store']);
         }
 
-        return view('hris.attendance-print', compact('employee', 'rows', 'from', 'to', 'remarks'));
+        $statuses = RequestStatus::whereIn('request_type', ['OB', 'LEAVE', 'CTO'])
+            ->orderBy('id')->get()->groupBy(fn (RequestStatus $status) => $status->request_type.':'.$status->request_id)
+            ->map(fn ($history) => $history->last()->status);
+        $approved = static fn (string $type, int $id, array $accepted): bool => in_array($statuses->get($type.':'.$id), $accepted, true);
+
+        $officialBusinesses = OfficialBusiness::where('user_id', $employee->id)->whereBetween('business_date', [$from, $to])->get()
+            ->filter(fn (OfficialBusiness $business) => $approved('OB', $business->id, ['Approved']))
+            ->keyBy(fn (OfficialBusiness $business) => $business->business_date->toDateString());
+        $leaveRequests = LeaveRequest::with(['type', 'dates'])->where('user_id', $employee->id)
+            ->whereHas('dates', fn ($query) => $query->whereBetween('leave_date', [$from, $to]))->get()
+            ->filter(fn (LeaveRequest $leave) => $approved('LEAVE', $leave->id, ['Approved', 'For Cancellation']));
+        $leaves = $leaveRequests->flatMap(fn (LeaveRequest $leave) => $leave->dates->mapWithKeys(
+            fn ($date) => [$date->leave_date->toDateString() => $leave],
+        ));
+        $ctoRequests = CtoRequest::with('dates')->where('user_id', $employee->id)
+            ->whereHas('dates', fn ($query) => $query->whereBetween('cto_date', [$from, $to]))->get()
+            ->filter(fn (CtoRequest $cto) => $approved('CTO', $cto->id, ['Approved', 'For Cancellation']));
+        $ctoDates = $ctoRequests->flatMap(fn (CtoRequest $cto) => $cto->dates->mapWithKeys(
+            fn ($date) => [$date->cto_date->toDateString() => ['request' => $cto, 'date' => $date]],
+        ));
+        $holidays = Holiday::effectiveFor($employee)->whereBetween('holiday_date', [$from, $to])->orderByDesc('id')->get()
+            ->keyBy(fn (Holiday $holiday) => $holiday->holiday_date->toDateString());
+
+        $rowsByDate = $rows->keyBy(fn (DailyAttendance $attendance) => $attendance->attendance_date->toDateString());
+        $weekOfMonth = static function (CarbonImmutable $date): int {
+            $firstWeek = (int) $date->startOfMonth()->format('W');
+            $week = (int) $date->format('W');
+            if ($date->month === 1 && $week > 51) {
+                $week = 0;
+            } elseif ($date->month === 12 && $week === 1) {
+                $week = 53;
+            }
+
+            return max(1, min(6, $week - $firstWeek + 1));
+        };
+        $statistics = array_fill(1, 6, ['worked' => 0, 'late' => 0, 'late_count' => 0, 'undertime' => 0, 'undertime_count' => 0, 'absent' => 0, 'overtime' => 0]);
+        $reportDays = collect();
+        for ($date = CarbonImmutable::parse($from); $date->lte(CarbonImmutable::parse($to)); $date = $date->addDay()) {
+            $key = $date->toDateString();
+            $attendance = $rowsByDate->get($key);
+            $holiday = $holidays->get($key);
+            $business = $officialBusinesses->get($key);
+            $leave = $leaves->get($key);
+            $cto = $ctoDates->get($key);
+            $week = $weekOfMonth($date);
+            if ($attendance) {
+                $statistics[$week]['worked'] += (int) ($attendance->worked_minutes ?? 0);
+                $statistics[$week]['late'] += (int) ($attendance->late_minutes ?? 0);
+                $statistics[$week]['late_count'] += (int) (($attendance->late_minutes ?? 0) > 0);
+                $statistics[$week]['undertime'] += (int) ($attendance->undertime_minutes ?? 0);
+                $statistics[$week]['undertime_count'] += (int) (($attendance->undertime_minutes ?? 0) > 0);
+                $statistics[$week]['overtime'] += (int) ($attendance->overtime_minutes ?? 0);
+            }
+            if ($leave && in_array($leave->type?->name, ['Vacation Leave', 'Sick Leave'], true)) {
+                $statistics[$week]['absent']++;
+            }
+            $reportDays->push(compact('date', 'attendance', 'holiday', 'business', 'leave', 'cto', 'week'));
+        }
+
+        $reportData = compact('employee', 'rows', 'from', 'to', 'remarks', 'reportDays', 'statistics');
+        if ($request->input('format') === 'xls') {
+            return response()->streamDownload(function () use ($reportData) {
+                echo view('hris.attendance-print', $reportData)->render();
+            }, 'DTR-'.$employee->id.'-'.$from.'.xls', ['Content-Type' => 'application/vnd.ms-excel; charset=UTF-8', 'Cache-Control' => 'private, no-store']);
+        }
+
+        return view('hris.attendance-print', $reportData);
     }
 }

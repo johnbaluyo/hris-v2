@@ -44,7 +44,18 @@ class PayrollTest extends TestCase
         $this->postJson('/hr/payroll/'.$payroll->id.'/lines', ['user_id' => $employee->id])->assertStatus(409);
         $employee->update(['name' => 'Changed after payroll']);
         $this->assertNotSame($employee->fresh()->name, $line->fresh()->employee_snapshot['name']);
-        $this->get('/hr/payroll/'.$payroll->id.'/export')->assertOk()->assertDownload('payroll-PAY-2026-10-A.csv');
+        $this->get('/hr/payroll/'.$payroll->id.'/export')->assertOk()->assertDownload('payroll-PAY-2026-10-A.xls');
+        $this->get('/hr/payroll/'.$payroll->id.'/payslips/print')->assertOk()->assertSee('P A Y S L I P')->assertSee('Pay Week 4');
+    }
+
+    public function test_finalized_csw_payroll_line_exports_legacy_disbursement_voucher(): void
+    {
+        [$employee, $hr] = $this->payrollActors();
+        $payroll = Payroll::create(['type' => 'CSW', 'payroll_number' => 'CSW-01', 'fund_cluster' => '01', 'period_start' => '2026-10-01', 'period_end' => '2026-10-15', 'status' => 'Finalized', 'created_by' => $hr->id]);
+        $line = PayrollLine::create(['payroll_id' => $payroll->id, 'user_id' => $employee->id, 'employee_snapshot' => ['name' => 'Juan Dela Cruz', 'position' => 'Project Development Officer III', 'division' => 'Training Division'], 'basic_salary' => 30000, 'pera' => 0, 'rata' => 0, 'other_compensation' => 0, 'statutory_deductions' => 2400, 'other_deductions' => 0, 'late_minutes' => 0, 'undertime_minutes' => 0, 'absence_days' => 0, 'gross' => 30000, 'total_deductions' => 2400, 'net' => 27600, 'calculation_inputs' => []]);
+
+        $this->actingAs($hr)->get('/hr/payroll/'.$payroll->id.'/lines/'.$line->id.'/voucher/export')
+            ->assertOk()->assertDownload('DV_Juan_Dela_Cruz_'.now()->format('Y-m-d').'.xls');
     }
 
     public function test_weekly_allocation_always_reconciles_to_net(): void

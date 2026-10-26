@@ -137,6 +137,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/attendance/review', [AttendanceReviewController::class, 'index'])->name('attendance.review');
     Route::get('/attendance/review/data', [AttendanceReviewController::class, 'data']);
     Route::get('/attendance/review/export', [AttendanceReviewController::class, 'export']);
+    Route::post('/attendance/review/bulk-print', [AttendanceReviewController::class, 'bulkPrint']);
     Route::post('/attendance/clock', [AttendanceController::class, 'clock'])->middleware('throttle:6,1');
     Route::get('/attendance/{employee}', [AttendanceController::class, 'index'])->whereNumber('employee');
     Route::get('/attendance/{employee}/data', [AttendanceController::class, 'data']);
@@ -153,14 +154,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/official-business/{officialBusiness}/transition', [OfficialBusinessController::class, 'transition']);
     Route::post('/official-business/{officialBusiness}/evidence', [OfficialBusinessController::class, 'uploadEvidence']);
     Route::get('/official-business/{officialBusiness}/history', [OfficialBusinessController::class, 'history']);
+    Route::get('/official-business/{officialBusiness}/print', [OfficialBusinessController::class, 'print']);
     Route::get('/overtime', [OvertimeController::class, 'index'])->name('overtime');
     Route::get('/overtime/data', [OvertimeController::class, 'data']);
     Route::post('/overtime', [OvertimeController::class, 'store']);
     Route::post('/overtime/{overtime}/transition', [OvertimeController::class, 'transition']);
+    Route::get('/overtime/{overtime}/print', [OvertimeController::class, 'print']);
     Route::get('/cto', [CtoController::class, 'index'])->name('cto');
     Route::get('/cto/data', [CtoController::class, 'data']);
     Route::post('/cto', [CtoController::class, 'store']);
     Route::post('/cto/{cto}/transition', [CtoController::class, 'transition']);
+    Route::get('/cto/{cto}/print', [CtoController::class, 'print']);
     Route::get('/cto/ledger/{employee}', [CtoController::class, 'ledger']);
     Route::post('/cto/ledger/{employee}', [CtoController::class, 'adjust']);
     Route::get('/leave', [LeaveController::class, 'index'])->name('leave');
@@ -168,6 +172,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/leave', [LeaveController::class, 'store']);
     Route::post('/leave/date-check', [LeaveController::class, 'dateCheck']);
     Route::post('/leave/{leave}/transition', [LeaveController::class, 'transition']);
+    Route::get('/leave/{leave}/print', [LeaveController::class, 'print']);
     Route::get('/leave/ledger/{employee}', [LeaveController::class, 'ledger']);
     Route::post('/leave/ledger/{employee}', [LeaveController::class, 'adjust']);
     Route::get('/hr/payroll', [PayrollController::class, 'index'])->name('payroll');
@@ -178,6 +183,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/hr/payroll/{payroll}/lines/{line}', [PayrollController::class, 'deleteLine']);
     Route::post('/hr/payroll/{payroll}/finalize', [PayrollController::class, 'finalize']);
     Route::get('/hr/payroll/{payroll}/export', [PayrollController::class, 'export']);
+    Route::get('/hr/payroll/{payroll}/payslips/print', [PayrollController::class, 'payslips']);
+    Route::get('/hr/payroll/{payroll}/lines/{line}/voucher/export', [PayrollController::class, 'voucher']);
     Route::post('/hr/payroll/loan-categories', [PayrollController::class, 'saveLoanCategory']);
 
     Route::get('/learning-development', [LearningDevelopmentController::class, 'index'])->name('learning-development');
@@ -187,6 +194,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/learning-development/requirements/{requirement}/archive', [LearningDevelopmentController::class, 'archiveRequirement']);
     Route::post('/learning-development/requirements/copy', [LearningDevelopmentController::class, 'copyRequirements']);
     Route::get('/learning-development/positions/{position}/matrix', [LearningDevelopmentController::class, 'matrix']);
+    Route::get('/learning-development/positions/{position}/matrix/print', [LearningDevelopmentController::class, 'printMatrix']);
     Route::post('/learning-development/requirements/{requirement}/training/{training}', [LearningDevelopmentController::class, 'linkTraining']);
     Route::delete('/learning-development/training/{training}/link', [LearningDevelopmentController::class, 'unlinkTraining']);
     Route::get('/learning-development/plans', [LearningDevelopmentController::class, 'plans']);

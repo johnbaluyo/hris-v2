@@ -54,7 +54,7 @@ class PdsTest extends TestCase
             $this->postJson('/profile/'.$user->id.'/'.$section, ['data' => $data])->assertOk();
             $this->getJson('/profile/'.$user->id.'/'.$section.'/data')->assertOk()->assertJsonCount(1, 'data');
         }
-        $this->get('/profile/'.$user->id.'/print')->assertOk()->assertSee('Example University')->assertSee('Example training')->assertSee('not a certified government form');
+        $this->get('/profile/'.$user->id.'/print')->assertOk()->assertSee('PERSONAL DATA SHEET')->assertSee('Example University')->assertSee('Example training');
     }
 
     public function test_child_ids_and_prints_cannot_cross_employee_boundaries(): void

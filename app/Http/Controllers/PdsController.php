@@ -83,9 +83,18 @@ class PdsController extends Controller
     public function print(User $employee): View
     {
         Gate::authorize('readPds', $employee);
+        $legacyAliases = [
+            'experience' => 'work_experience',
+            'voluntary' => 'voluntary_work',
+            'learning' => 'learning_development',
+            'other' => 'other_information',
+            'declarations' => 'government_declarations',
+            'references' => 'character_references',
+            'government-id' => 'government_ids',
+        ];
         $sections = [];
         foreach (config('pds') as $section => $definition) {
-            $query = $employee->pdsEntries()->where('section', $section)->latest('id');
+            $query = $employee->pdsEntries()->whereIn('section', array_filter([$section, $legacyAliases[$section] ?? null]))->latest('id');
             $entries = $definition['snapshot'] ? $query->limit(1)->get() : $query->get();
             if ($section === 'education') {
                 $entries = $entries->sortBy(fn ($entry) => array_search($entry->data['educ_level'], ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL / TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'], true));
